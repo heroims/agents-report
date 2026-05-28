@@ -1,159 +1,256 @@
 # Agents Team Usage Collector
 
-团队成员执行一条命令，自动采集 Claude Code + Codex + OpenCode + Cursor + Trae 使用数据，支持按周/月/季/年归档。
+团队成员通过 agent slash command 即可采集 Claude Code、Codex CLI、OpenCode、Cursor、Trae 使用数据，合并为单一报告并按周/月/季/年归档。核心采集脚本纯 Python 标准库实现，无需安装任何第三方依赖。
 
-## 使用方法
+可选附带 Flask Dashboard 用于团队报告汇总与 AI 摘要（Dashboard 需要额外安装依赖）。
 
-### 前置条件
-- 已安装并可使用 Claude Code / Codex / OpenCode / Cursor / Trae 中至少一个
-- Python 3.12+（脚本仅依赖标准库，无需额外安装）
-- 当前目录为仓库根目录
+---
 
-### 环境变量（可选）
+## 环境要求
 
-项目根目录创建 `.envrc` 文件，`getagt`、`analyzeagt`、`dashboard-uv` 启动时会自动加载：
+- Python 3.12+（**核心采集仅需标准库，无需 pip/uv 安装任何包**）
+- 至少安装 Claude Code / Codex CLI / OpenCode / Cursor / Trae 其中之一
+
+## 可选：环境变量
+
+在项目根目录创建 `.envrc` 文件（已被 `.gitignore` 忽略），`./getagt`、`./analyzeagt`、`./dashboard-uv` 启动时会自动 `source`：
 
 ```bash
-export AGENTS_REPORT_URL=http://localhost:8080  # 设为 Dashboard 地址后，报告直接上传而非本地 git
-export DASHBOARD_PORT=8080                      # Dashboard 监听端口
+# Dashboard 地址 —— 设置后 getagt 直接 HTTP PUT 上传报告，analyzeagt 委托服务端分析
+# 不设置时：getagt 通过 git add/commit/push 归档，analyzeagt 本地生成团队报告
+export AGENTS_REPORT_URL=http://localhost:8880
+
+# Dashboard 监听端口（仅 Dashboard 使用）
+export DASHBOARD_PORT=8880
+
+# GitLab 集成（可选 —— 不设置时 Dashboard 读取本地 reports/ 目录）
+# export GITLAB_URL=https://gitlab.example.com
+# export GITLAB_TOKEN=glpat-xxxx
+# export GITLAB_PROJECT=my-group/my-project
+
+# AI 摘要功能（仅 Dashboard /api/ai/summary 和 /api/ai/chat 使用）
+export AI_PROVIDER=openai_chat       # 或 anthropic_messages
+export AI_API_KEY=sk-xxxx
+export AI_BASE_URL=https://api.openai.com
+export AI_MODEL=gpt-4o
 ```
 
-### 采集个人数据
+---
 
-在 Claude Code / Codex 中执行：
+## 采集个人报告 (`getagt`)
+
+### Claude Code / Codex 中执行
 
 ```text
 /getagt
 ```
 
-命令行执行：
+该命令由 [`.claude/commands/getagt.md`](.claude/commands/getagt.md) 和 [`.agents/skills/source-command-getagt/SKILL.md`](.agents/skills/source-command-getagt/SKILL.md) 驱动。Agent 会自动运行 `./getagt` 并展示结果。
+
+### CLI 执行
 
 ```bash
-./getagt                        # macOS/Linux
-python scripts/getagt.py        # Windows
+./getagt                        # 周报（默认）
+./getagt --period monthly       # 月报
+./getagt --period quarterly     # 季报
+./getagt --period annual        # 年报
 ```
 
-说明：`/getagt` 是自定义命令，只在支持 slash command 的工具内可用；普通 Terminal 需要使用 `./getagt` 或 `python3 scripts/getagt.py`。
+`./getagt` 是 shell wrapper，等价于 `python3 scripts/getagt.py [args]`。Windows 下可直接运行 `python scripts\getagt.py`。
 
-#### 指定报告周期
+### 自动流程
 
-默认生成**周报**。可通过 `--period` / `-p` 指定周期类型：
+1. 通过 `git config user.name` 识别成员标识（slug 化后作为文件名前缀）
+2. 从 [`scripts/members.json`](scripts/members.json) 查找所属分组（key 为分组名，value 为成员列表；未匹配的默认为 `group`）
+3. 调用 `scripts/generate_insights_from_stats.py` 生成 Claude Code insights 报告
+4. 依次采集 Codex / OpenCode / Cursor / Trae 数据（可选数据源，任一失败不阻断主流程）
+5. 采集本机环境信息（JDK 版本、网络接口 IP）
+6. 通过 `scripts/merge_reports.py` 合并为单一 HTML
+7. 输出到 `reports/{period}/{group}/{name}-{period}-report.html`
+8. 若设置了 `AGENTS_REPORT_URL`：通过 `PUT /api/report/upload` 上传到 Dashboard；否则 `git add/commit/push`
 
-```bash
-./getagt --period monthly    # 月报 (2026-05)
-./getagt --period quarterly  # 季报 (2026-Q2)
-./getagt --period annual     # 年报 (2026)
-./getagt --period weekly     # 周报 (默认)
-```
+---
 
-### 生成团队报告
+## 生成团队报告 (`analyzeagt`)
 
-在 Claude Code / Codex 中执行：
+### Claude Code / Codex 中执行
 
 ```text
 /analyzeagt
 ```
 
-命令行执行：
+### CLI 执行
 
 ```bash
-python3 scripts/analyze.py                        # 周报 (默认)
-python3 scripts/analyze.py --period monthly       # 月报
-python3 scripts/analyze.py --period quarterly     # 季报
-python3 scripts/analyze.py --period annual        # 年报
+./analyzeagt                        # 周报（默认）
+./analyzeagt --period monthly       # 月报
+./analyzeagt --period quarterly     # 季报
+./analyzeagt --period annual        # 年报
 ```
 
-- 若设置了 `AGENTS_REPORT_URL`：通过 `POST /api/analyze` 委托 Dashboard 在服务端执行分析
-- 未设置时：本地生成团队报告
+等价于 `python3 scripts/analyze.py [args]`。
 
-### 启动 Dashboard
+### 自动流程
 
-Dashboard 依赖 `flask` + `requests`，推荐使用 [uv](https://docs.astral.sh/uv/) 管理依赖：
+1. 遍历 `reports/` 收集所有成员报告（通过 `scripts/period_utils.py` 解析文件名中的周期标识）
+2. 按周期类型筛选，确定当前周期和上一对比周期
+3. **自动回退聚合**：若指定周期无直接匹配数据，自动回退聚合下级周期：
+   - 年报 → 季报 → 月报 → 周报
+   - 季报 → 月报 → 周报
+   - 月报 → 周报
+4. 聚合规则：数值字段累加、days 取最大值、tools/languages 合并计数
+5. 若设置了 `AGENTS_REPORT_URL`：通过 `POST /api/analyze` 委托 Dashboard 服务端执行；否则本地生成
+6. 输出到 `reports/{period}/team-report.html`
+
+---
+
+## 启动 Dashboard（可选）
+
+Dashboard 提供 Web 界面浏览团队报告，支持 AI 摘要和问答。仅 Dashboard 需要额外安装依赖。
+
+### 安装依赖
 
 ```bash
-uv sync              # 安装依赖（仅首次）
-./dashboard-uv       # 启动 dashboard，读取本地 reports/
+uv sync              # 安装 pyproject.toml 中声明的依赖（flask, requests, openai, anthropic）
 ```
 
-Docker 方式（无需安装 Python/uv）：
+Dashboard 依赖：`flask`, `requests`, `openai`, `anthropic`。核心采集脚本（`getagt.py`, `analyze.py` 等）仅用 Python 标准库，无需此步骤。
+
+### 启动
 
 ```bash
-docker compose up -d
+./dashboard-uv       # 等价于 uv run python dashboard/server.py
 ```
 
-Dashboard 默认监听 `http://localhost:8080`，可通过 `DASHBOARD_PORT` 环境变量修改。不配 `GITLAB_TOKEN` 时自动读取本地 `reports/` 目录。
+Docker 方式：
 
-### 完整流程（自动执行）
-`/getagt`：
-1. 生成最新 insights 报告
-2. 采集 Codex/OpenCode/Cursor/Trae 数据（可选，失败不阻断）
-3. 按周期归档到 `reports/{period}/{group}/`
+```bash
+docker build -t agents-report-dashboard .
+docker run -p 8880:8880 agents-report-dashboard
+```
 
-`/analyzeagt`：
-1. 读取 `reports/` 历史报告
-2. 若指定周期无直接匹配数据，自动回退聚合下级周期（年报→季报→月报→周报）
-3. 若设置了 `AGENTS_REPORT_URL`，委托 Dashboard 服务端分析；否则本地生成
-4. 输出到 `reports/{period}/team-report.html`
+默认监听 `http://localhost:8880`（可通过 `DASHBOARD_PORT` 修改）。不配 `GITLAB_TOKEN` 时自动读取本地 `reports/` 目录。
 
-### 预期输出
-- 个人报告：`reports/{period}/{group}/{name}-{period}-report.html`
-  - 周报：`reports/2026-W22/group/heroims-2026-W22-report.html`
-  - 月报：`reports/2026-05/group/heroims-2026-05-report.html`
-- 团队报告：`reports/{period}/team-report.html`
-  - 周报：`reports/2026-W22/team-report.html`
-  - 月报：`reports/2026-05/team-report.html`
+### Dashboard API
 
-### 分组说明
-- 分组由 `scripts/members.json` 定义，key 为分组名，value 为成员列表
-- 不在 `members.json` 中的成员默认归入 `group` 分组
+| 端点 | 方法 | 说明 |
+|------|------|------|
+| `/` | GET | Dashboard 前端页面 |
+| `/api/data` | GET | 获取聚合数据（支持 `?group=&period=&period_type=` 过滤） |
+| `/api/report` | GET | 代理报告 HTML（支持 `?path=` 或 `?name=&period=&group=&kind=`） |
+| `/api/report/upload` | PUT | 接收 `getagt` 上传的个人报告 |
+| `/api/analyze` | POST | 触发服务端团队分析（`?period_type=weekly`） |
+| `/api/refresh` | POST | 刷新缓存 |
+| `/api/ai/summary` | POST | 生成 AI 摘要（需配置 AI 环境变量） |
+| `/api/ai/summary/stream` | POST | 流式 AI 摘要 |
+| `/api/ai/chat` | POST | AI 问答 |
+
+---
 
 ## 目录与命名规范
 
-- 所有数据统一存放在 `reports/`
-  - 第一层：`{period}/`（时间段，如 `2026-W22`）
-  - 第二层：`{group}/`（团队分组） | 团队报告 `team-report.html`
-  - 第三层：个人报告 `{name}-{period}-report.html`
-- 团队报告命名：`team-report.html`
-- 成员报告命名：`{name}-{period}-report.html`
-- 成员映射文件：`scripts/members.json`
-  - key: 文件名中的 `{name}` 部分
-  - value: 团队展示名
+```
+reports/
+├── {period}/                      # 如 2026-W22 / 2026-05 / 2026-Q2 / 2026
+│   ├── team-report.html           # 团队汇总报告
+│   ├── {group}/                   # 分组目录（如 group / dex）
+│   │   └── {name}-{period}-report.html   # 个人报告
+│   └── ...
+```
+
+### 周期标识格式
+
+| 周期类型 | 标识格式 | 示例 |
+|----------|----------|------|
+| 周报 | `YYYY-WNN` | `2026-W22` |
+| 月报 | `YYYY-MM` | `2026-05` |
+| 季报 | `YYYY-QN` | `2026-Q2` |
+| 年报 | `YYYY` | `2026` |
+
+### 分组
+
+- 分组由 [`scripts/members.json`](scripts/members.json) 定义，key 为分组名，value 为成员标识列表
+- 不在 `members.json` 中的成员默认归入 `group` 分组
+- 成员标识来源于 `git config user.name` 的 slug 化结果（小写、空格转连字符、去特殊符号）
+
+---
+
+## 项目结构
+
+```
+.
+├── getagt                    # 个人采集入口（shell wrapper → scripts/getagt.py）
+├── analyzeagt                # 团队分析入口（shell wrapper → scripts/analyze.py）
+├── dashboard-uv              # Dashboard 入口（shell wrapper → dashboard/server.py）
+├── pyproject.toml            # uv 项目定义 + Dashboard 依赖
+├── Dockerfile                # Dashboard 容器构建
+├── scripts/
+│   ├── getagt.py             # 主采集脚本（标准库）
+│   ├── analyze.py            # 团队聚合分析（标准库）
+│   ├── period_utils.py       # 周期工具函数（标准库）
+│   ├── generate_insights_from_stats.py  # Claude Code insights 生成（标准库）
+│   ├── gen_report_from_sessions.py      # 从 sessions 文件生成 Claude 报告（标准库，备选）
+│   ├── collect_codex.py      # Codex CLI 数据采集（标准库）
+│   ├── collect_opencode.py   # OpenCode 数据采集（标准库）
+│   ├── collect_cursor.py     # Cursor 数据采集（标准库）
+│   ├── collect_trae.py       # Trae 数据采集（标准库）
+│   ├── merge_reports.py      # 多工具报告合并（标准库）
+│   ├── members.json          # 成员→分组映射
+│   └── exclude_paths.json    # 路径排除配置
+├── dashboard/
+│   ├── server.py             # Flask 服务（需 flask, requests, openai, anthropic）
+│   ├── dashboard.html        # 前端页面
+│   ├── cache.py              # 数据缓存
+│   ├── gitlab_client.py      # GitLab API 客户端
+│   └── requirements.txt      # pip 替代依赖声明
+├── .claude/commands/
+│   ├── getagt.md             # Claude Code slash command
+│   └── analyzeagt.md
+├── .agents/skills/
+│   ├── source-command-getagt/SKILL.md      # Codex agent skill
+│   └── source-command-analyzeagt/SKILL.md
+└── reports/                  # 报告存档目录（git tracked）
+```
+
+---
 
 ## 常见问题
 
-### insights 报告生成失败
-- 现象：执行 `/getagt` 后提示 Claude 报告生成失败
-- 原因：`scripts/generate_insights_from_stats.py` 执行异常，常见为 `~/.claude/usage-data/session-meta/` 或 `~/.claude/projects/**/*.jsonl` 缺失/损坏
-- 处理：
-  1. 检查 `~/.claude/usage-data/session-meta/` 与 `~/.claude/projects/` 是否存在且本周有数据
-  2. 单独跑脚本看报错：`python3 scripts/generate_insights_from_stats.py 2026-W19 --output=/tmp/test.html`
-  3. **不要** 改用 Claude Code 内置 `/insights` 命令来兜底——`/insights` 输出的是滚动 ~30 天数据（不按周），归档后会出现"45 sessions / 24 active days"这类月度数字假冒成周报的情况
-- 跨期补跑：`./getagt` 默认取当前周期；要生成历史报告，直接调底层脚本并显式指定周期号
-  ```bash
-  # 周报
-  python3 scripts/generate_insights_from_stats.py 2026-W19 --output=$HOME/.claude/usage-data/report.html
-  python3 scripts/collect_codex.py 2026-W19 --output=/tmp/codex.html
-  python3 scripts/merge_reports.py $HOME/.claude/usage-data/report.html /tmp/codex.html "" "" "" reports/2026-W19/group/{name}-2026-W19-report.html 2026-W19
+### Claude Code insights 生成失败
 
-  # 月报
-  python3 scripts/generate_insights_from_stats.py 2026-05 --output=$HOME/.claude/usage-data/report.html
-  python3 scripts/collect_codex.py 2026-05 --output=/tmp/codex.html
-  python3 scripts/merge_reports.py $HOME/.claude/usage-data/report.html /tmp/codex.html "" "" "" reports/2026-05/group/{name}-2026-05-report.html 2026-05
-  ```
+- **现象**：执行 `/getagt` 后提示 Claude 报告生成失败
+- **原因**：`scripts/generate_insights_from_stats.py` 执行异常，常见为 `~/.claude/usage-data/session-meta/` 或 `~/.claude/projects/**/*.jsonl` 缺失或损坏
+- **处理**：
+  1. 检查 `~/.claude/usage-data/session-meta/` 与 `~/.claude/projects/` 是否存在且本期有数据
+  2. 单独运行看报错：`python3 scripts/generate_insights_from_stats.py 2026-W19 --output=/tmp/test.html`
+  3. **不要**改用 Claude Code 内置 `/insights` 命令来兜底——`/insights` 输出滚动 ~30 天数据（不按周），归档后会出现月度数字假冒周报的情况
 
-### OpenCode 报告采集失败
-- 现象：`/getagt` 过程中 OpenCode 部分没有合并
-- 原因：`opencode db path` 不可用、OpenCode 数据库不可读、或当周没有会话
-- 处理：OpenCode 为可选数据源，主流程会继续；如需排查可单独运行
-  `python3 scripts/collect_opencode.py 2026-W15 --output=/tmp/opencode-test.html`
+### 跨期补跑历史报告
 
-### 报告命名或映射异常
-- 现象：报告生成但无法正确映射成员显示名
-- 原因：文件名或 `members.json` key 不匹配
-- 处理：确认文件名为 `{name}-{period}-report.html` 且 `members.json` key 与 `{name}` 一致
+`./getagt` 默认取当前周期；要生成历史报告，直接调底层脚本并显式指定周期号：
 
-### 生成团队报告
-- 使用：执行 `/analyzeagt` 或 `python3 scripts/analyze.py --period <type>`
-- 命令行执行：Windows 用 `python scripts/analyze.py`，macOS 用 `python3 scripts/analyze.py`
-- 输出：`reports/{period}/team-report.html`
-- Dashboard 端：也可通过 `POST /api/analyze?period_type=weekly` 触发服务端分析
+```bash
+# 周报
+python3 scripts/generate_insights_from_stats.py 2026-W19 --output=$HOME/.claude/usage-data/report.html
+python3 scripts/collect_codex.py 2026-W19 --output=/tmp/codex.html
+python3 scripts/merge_reports.py $HOME/.claude/usage-data/report.html /tmp/codex.html "" "" "" \
+    reports/2026-W19/group/{name}-2026-W19-report.html 2026-W19
+
+# 月报
+python3 scripts/generate_insights_from_stats.py 2026-05 --output=$HOME/.claude/usage-data/report.html
+python3 scripts/collect_codex.py 2026-05 --output=/tmp/codex.html
+python3 scripts/merge_reports.py $HOME/.claude/usage-data/report.html /tmp/codex.html "" "" "" \
+    reports/2026-05/group/{name}-2026-05-report.html 2026-05
+```
+
+### OpenCode / Cursor / Trae 数据采集失败
+
+- OpenCode、Cursor、Trae 均为可选数据源，主流程在它们失败时会继续执行
+- 单独排查：`python3 scripts/collect_opencode.py 2026-W15 --output=/tmp/test.html`
+- Codex 依赖 `~/.codex/state_5.sqlite` 数据库；OpenCode 依赖 `opencode db path` 命令可用
+
+### 成员名称映射异常
+
+- 确认文件名格式为 `{name}-{period}-report.html`
+- `members.json` 的 key 必须与 `git config user.name` slug 化后的结果一致
+- 可运行 `git config user.name` 确认当前标识
