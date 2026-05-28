@@ -148,6 +148,8 @@ python3 scripts/schedule_teardown.py  # 移除系统调度定时任务
 
 Dashboard 提供 Web 界面浏览团队报告，支持 AI 摘要和问答。仅 Dashboard 需要额外安装依赖。
 
+<img src="/screenshot/dashboard.png" width="50%">
+
 ### 安装依赖
 
 ```bash

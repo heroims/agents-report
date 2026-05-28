@@ -153,6 +153,8 @@ python3 scripts/schedule_teardown.py  # Remove system scheduler tasks
 
 The Dashboard provides a web UI for browsing team reports, with AI-powered summaries and Q&A. Only the Dashboard requires additional dependencies.
 
+<img src="/screenshot/dashboard.png" width="50%">
+
 ### Install Dependencies
 
 ```bash
