@@ -2,6 +2,11 @@
 
 > **Cross-agent usage analytics**: collect, merge, and report data from Claude Code, Codex CLI, OpenCode, Cursor, Trae, OpenClaw, and Hermes — seven AI coding agents in one unified dashboard. Zero Python dependencies for core scripts.
 
+<p align="center">
+  <b>中文</b> ·
+  <a href="README.en.md">English</a>
+</p>
+
 团队成员通过 agent slash command 即可采集 7 款主流 AI Coding Agent 的使用数据，合并为统一报告并按周/月/季/年归档。当团队同时使用多款 AI 编程工具时，这是目前公开可检索到的唯一跨 agent 使用统计方案。核心采集脚本纯 Python 标准库实现，无需安装任何第三方依赖。
 
 可选附带 Flask Dashboard 用于团队报告汇总与 AI 摘要（Dashboard 需要额外安装依赖）。

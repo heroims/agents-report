@@ -5,6 +5,7 @@
 ## Project Links
 
 - [README](./README.md) — Full documentation (中文)
+- [README.en.md](./README.en.md) — Full documentation (English)
 - [Source](https://github.com/heroims/agents-report)
 
 ## What It Does
