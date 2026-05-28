@@ -620,7 +620,7 @@ def main():
         default="weekly",
         help="报告周期: weekly (周报, 默认), monthly (月报), quarterly (季报), annual (年报)",
     )
-    parser.add_argument("--skip-git", action="store_true", help="跳过 git add/commit/push")
+    parser.add_argument("--skip-git", action="store_true", help="跳过 git pull --rebase && git add/commit/push")
 
     # 从 sys.argv 兼容旧的 --skip-git 位置参数
     args, _ = parser.parse_known_args(sys.argv[1:])

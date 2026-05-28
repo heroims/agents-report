@@ -22,6 +22,6 @@ allowed-tools: Bash, Read, Glob
    - 生成 Claude Code insights 报告
    - 采集 Codex/OpenCode/Cursor/Trae/OpenClaw/Hermes 数据（可选，失败不阻断）
    - 合并报告并按 `reports/{period}/{group}/{name}-{period}-report.html` 归档
-   - 若设置了 `AGENTS_REPORT_URL` 则 HTTP PUT 上传到 dashboard，否则 git add/commit/push
+   - 若设置了 `AGENTS_REPORT_URL` 则 HTTP PUT 上传到 dashboard，否则 git pull --rebase && git add/commit/push
 
 3. **输出结果**：脚本最后一行会打印 "已完成采集：{报告路径}" 或 "已上传到 {URL}"

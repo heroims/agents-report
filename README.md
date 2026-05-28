@@ -17,7 +17,7 @@
 
 ```bash
 # Dashboard 地址 —— 设置后 getagt 直接 HTTP PUT 上传报告，analyzeagt 委托服务端分析
-# 不设置时：getagt 通过 git add/commit/push 归档，analyzeagt 本地生成团队报告
+# 不设置时：getagt 通过 git pull --rebase && git add/commit/push 归档，analyzeagt 本地生成团队报告
 export AGENTS_REPORT_URL=http://localhost:8880
 
 # Dashboard 监听端口（仅 Dashboard 使用）
@@ -67,7 +67,7 @@ export AI_MODEL=gpt-4o
 5. 采集本机环境信息（JDK 版本、网络接口 IP）
 6. 通过 `scripts/merge_reports.py` 合并为单一 HTML
 7. 输出到 `reports/{period}/{group}/{name}-{period}-report.html`
-8. 若设置了 `AGENTS_REPORT_URL`：通过 `PUT /api/report/upload` 上传到 Dashboard；否则 `git add/commit/push`
+8. 若设置了 `AGENTS_REPORT_URL`：通过 `PUT /api/report/upload` 上传到 Dashboard；否则 `git pull --rebase && git add/commit/push`
 
 ---
 
