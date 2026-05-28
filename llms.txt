@@ -1,0 +1,70 @@
+# Agents Team Usage Collector
+
+> Cross-agent usage analytics: collect, merge, and report data from 7 AI coding agents. Zero Python dependencies for core scripts.
+
+## Project Links
+
+- [README](./README.md) — Full documentation (中文)
+- [Source](https://github.com/heroims/agents-report)
+
+## What It Does
+
+Collects usage metrics from Claude Code, Codex CLI, OpenCode, Cursor, Trae, OpenClaw, and Hermes, merges them into unified HTML reports, and archives by week, month, quarter, or year. Currently the only publicly discoverable open-source solution for cross-agent usage analytics.
+
+## Key Capabilities
+
+- **Multi-agent collection**: Simultaneously gathers data from 7 AI coding tools with fault isolation — any single source failure does not block the pipeline
+- **Unified team reports**: Merges individual reports into team-level summaries with period-over-period comparison (current vs previous cycle)
+- **Auto roll-up aggregation**: Quarterly reports auto-aggregate from monthly data, annual from quarterly, with fallback to the next available granularity
+- **Scheduled reporting**: Supports Codex Automation (managed), macOS launchd, Linux crontab, and Windows schtasks for automated weekly/monthly/quarterly/annual submissions
+- **Optional Dashboard**: Flask-based web UI with REST API, AI-powered summaries, and chat Q&A over team reports
+- **Zero-dependency core**: Collection and analysis scripts use only Python 3.12+ standard library
+
+## Data Sources
+
+| Agent | Data Collected |
+|-------|---------------|
+| Claude Code | Sessions, tokens, tools, models, projects, languages |
+| Codex CLI | Sessions, tokens, tools, models from state database |
+| OpenCode | Sessions, tokens, tools via CLI |
+| Cursor | Sessions, tokens, models from local data |
+| Trae | Sessions, tokens, models from local data |
+| OpenClaw | Session starts, agent distribution, trigger sources from command logs |
+| Hermes | Sessions, messages, tokens (input/output/cache/reasoning), models, tools from state.db |
+
+## Report Structure
+
+```
+reports/
+├── {period}/                    # e.g. 2026-W22 / 2026-05 / 2026-Q2 / 2026
+│   ├── team-report.html         # Team aggregate
+│   ├── {group}/
+│   │   └── {name}-{period}-report.html
+│   └── ...
+```
+
+## Getting Started
+
+```bash
+# Collect personal report (current week)
+./getagt
+
+# Collect monthly report
+./getagt --period monthly
+
+# Generate team report
+./analyzeagt
+
+# Start optional Dashboard
+./dashboard-uv
+```
+
+## Optional: Dashboard API
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/data` | GET | Aggregated data with group/period filters |
+| `/api/report/upload` | PUT | Upload personal report from getagt |
+| `/api/analyze` | POST | Server-side team analysis |
+| `/api/ai/summary` | POST | AI-powered report summary |
+| `/api/ai/chat` | POST | AI Q&A over team data |

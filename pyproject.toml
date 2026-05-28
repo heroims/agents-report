@@ -1,7 +1,7 @@
 [project]
-name = "agent-report"
+name = "agents-report"
 version = "0.1.0"
-description = "Agent Team Usage Collector — 团队成员使用数据采集与报告系统"
+description = "Cross-agent usage analytics: collect, merge, and report data from Claude Code, Codex CLI, OpenCode, Cursor, Trae, OpenClaw, and Hermes — seven AI coding agents in one unified dashboard."
 requires-python = ">=3.12"
 
 dependencies = [
@@ -19,6 +19,10 @@ dev = [
 [project.scripts]
 getagt = "scripts.getagt:main"
 analyzeagt = "scripts.analyze:main"
+
+[project.urls]
+Homepage = "https://github.com/heroims/agents-report"
+Repository = "https://github.com/heroims/agents-report.git"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
