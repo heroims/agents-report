@@ -40,6 +40,7 @@ export AI_MODEL=gpt-4o
 ## 采集个人报告 (`getagt`)
 
 支持主流agent的skill模式
+
 <img src="/screenshot/trae.png" width="30%"><img src="/screenshot/claude.png" width="50%">
 
 ### Claude Code / Codex 中执行
