@@ -1,0 +1,16 @@
+.playwright-mcp/
+__pycache__/
+*/__pycache__/
+*.py[cod]
+.DS_Store
+
+# idea ignore
+.idea/
+*.ipr
+*.iml
+*.iws
+*.factorypath
+.venv/
+.superpowers/
+.gstack/
+.claude/settings.local.json
