@@ -1,0 +1,13 @@
+#!/usr/bin/env sh
+set -eu
+
+cd "$(dirname "$0")"
+
+# 加载本地环境变量（可选），仅对当前脚本生效
+[ -f .envrc ] && . ./.envrc
+
+if command -v python3 >/dev/null 2>&1; then
+  exec python3 scripts/getagt.py "$@"
+fi
+
+exec python scripts/getagt.py "$@"

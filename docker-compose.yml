@@ -1,0 +1,16 @@
+services:
+  dashboard:
+    build: .
+    ports:
+      - "${DASHBOARD_PORT:-8880}:8880"
+    environment:
+      - GITLAB_URL=${GITLAB_URL:-https://xxxxx}
+      - GITLAB_TOKEN=${GITLAB_TOKEN}
+      - GITLAB_PROJECT=${GITLAB_PROJECT:-wiki/agent-report}
+      - AI_API_KEY=${AI_API_KEY}
+      - AI_BASE_URL=${AI_BASE_URL:-https://xxx/v1}
+      - DASHBOARD_PORT=8880
+      - REPORTS_ROOT=/app/reports
+    volumes:
+      - ./reports:/app/reports:ro
+    restart: unless-stopped

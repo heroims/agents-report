@@ -1,0 +1,22 @@
+[project]
+name = "agent-report"
+version = "0.1.0"
+description = "Agent Team Usage Collector — 团队成员使用数据采集与报告系统"
+requires-python = ">=3.12"
+
+dependencies = [
+    "flask>=3.0",
+    "requests>=2.31",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+]
+
+[project.scripts]
+getagt = "scripts.getagt:main"
+analyzeagt = "scripts.analyze:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
