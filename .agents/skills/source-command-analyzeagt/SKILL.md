@@ -35,5 +35,5 @@ python3 scripts/analyze.py --period annual        # 年报
 也可通过 Dashboard 端点触发服务端分析：
 
 ```bash
-curl -X POST 'http://localhost:8080/api/analyze?period_type=weekly'
+curl -X POST 'http://localhost:8880/api/analyze?period_type=weekly'
 ```

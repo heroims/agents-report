@@ -7,8 +7,10 @@ services:
       - GITLAB_URL=${GITLAB_URL:-https://xxxxx}
       - GITLAB_TOKEN=${GITLAB_TOKEN}
       - GITLAB_PROJECT=${GITLAB_PROJECT:-wiki/agent-report}
+      - AI_PROVIDER=${AI_PROVIDER:-openai_chat}
       - AI_API_KEY=${AI_API_KEY}
       - AI_BASE_URL=${AI_BASE_URL:-https://xxx/v1}
+      - AI_MODEL=${AI_MODEL:-gpt-4o}
       - DASHBOARD_PORT=8880
       - REPORTS_ROOT=/app/reports
     volumes:
