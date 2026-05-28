@@ -668,7 +668,7 @@ def _build_trae_section(tu):
       </div>
 
       <h3 class="merge-subhead">How You Use Trae</h3>
-      <div class="merge-card-grid">
+      <div class="merge-grid merge-grid-3">
 {usage_cards}
       </div>
 
@@ -677,7 +677,7 @@ def _build_trae_section(tu):
 """
     if wins_html:
         section += f"""      <h3 class="merge-subhead">Highlights</h3>
-      <div class="merge-card-grid">
+      <div class="merge-grid merge-grid-3">
 {wins_html}
       </div>
 """
@@ -751,7 +751,7 @@ def _build_trae_cn_section(tu):
       </div>
 
       <h3 class="merge-subhead">How You Use Trae CN</h3>
-      <div class="merge-card-grid">
+      <div class="merge-grid merge-grid-3">
 {usage_cards}
       </div>
 
@@ -761,7 +761,7 @@ def _build_trae_cn_section(tu):
     if wins_html:
         section += f"""
       <h3 class="merge-subhead">Highlights</h3>
-      <div class="merge-card-grid">
+      <div class="merge-grid merge-grid-3">
 {wins_html}
       </div>
 """
@@ -984,6 +984,11 @@ def _build_merge_style():
 .merge-key { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 12px 14px; font-size: 13px; color: #166534; }
 .merge-split { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
 .merge-meta { font-size: 12px; color: #64748b; white-space: nowrap; }
+.merge-stat-row { display: flex; gap: 24px; margin-bottom: 20px; flex-wrap: wrap; }
+.merge-stat { text-align: center; }
+.merge-stat-value { font-size: 24px; font-weight: 700; color: #0f172a; }
+.merge-stat-label { font-size: 11px; color: #64748b; text-transform: uppercase; }
+.merge-card-value { font-size: 18px; font-weight: 600; color: #334155; margin-bottom: 4px; }
 .merge-pill-row { display: flex; flex-wrap: wrap; gap: 8px; }
 .merge-pill { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; background: #eef2ff; color: #4338ca; padding: 5px 10px; font-size: 12px; }
 .merge-pill b { color: #312e81; }
