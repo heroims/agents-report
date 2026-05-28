@@ -265,6 +265,7 @@ def _combined_metrics_from_raw(raw):
     oc_data = raw.get("oc_data") or {}
     cu_data = raw.get("cu_data") or {}
     tu_data = raw.get("tu_data") or {}
+    tc_data = raw.get("tc_data") or {}
     ol_data = raw.get("ol_data") or {}
     hm_data = raw.get("hm_data") or {}
     cc_messages = _safe_int(raw.get("cc_messages"))
@@ -272,6 +273,7 @@ def _combined_metrics_from_raw(raw):
     oc_messages = _safe_int(oc_data.get("total_messages"))
     cu_messages = _safe_int(cu_data.get("total_messages"))
     tu_messages = _safe_int(tu_data.get("total_messages"))
+    tc_messages = _safe_int(tc_data.get("total_messages"))
 
     cc_added = _safe_int(raw.get("cc_lines_added"))
     cc_removed = _safe_int(raw.get("cc_lines_removed"))
@@ -283,18 +285,22 @@ def _combined_metrics_from_raw(raw):
     cu_removed = _safe_int(cu_data.get("total_lines_removed"))
     tu_added = _safe_int(tu_data.get("total_lines_added"))
     tu_removed = _safe_int(tu_data.get("total_lines_removed"))
+    tc_added = _safe_int(tc_data.get("total_lines_added"))
+    tc_removed = _safe_int(tc_data.get("total_lines_removed"))
 
     cc_files = _safe_int(raw.get("cc_files"))
     cx_files = sum(_safe_int(item.get("patch_files")) for item in cx_data.get("thread_details") or [])
     oc_files = _safe_int(oc_data.get("files_modified"))
     cu_files = _safe_int(cu_data.get("total_files"))
     tu_files = _safe_int(tu_data.get("total_files"))
+    tc_files = _safe_int(tc_data.get("total_files"))
 
     cc_sessions = _safe_int(raw.get("cc_sessions"))
     cx_sessions = _safe_int(raw.get("cx_sessions") or cx_data.get("total_sessions"))
     oc_sessions = _safe_int(raw.get("oc_sessions") or oc_data.get("total_sessions"))
     cu_sessions = _safe_int(raw.get("cu_sessions") or cu_data.get("total_sessions"))
     tu_sessions = _safe_int(raw.get("tu_sessions") or tu_data.get("total_sessions"))
+    tc_sessions = _safe_int(raw.get("tc_sessions") or tc_data.get("total_sessions"))
     ol_sessions = _safe_int(raw.get("ol_sessions") or ol_data.get("total_sessions"))
     hm_sessions = _safe_int(raw.get("hm_sessions") or hm_data.get("total_sessions"))
     hm_messages = _safe_int(raw.get("hm_messages") or hm_data.get("total_messages"))
@@ -312,6 +318,11 @@ def _combined_metrics_from_raw(raw):
         day = item.get("day")
         if day:
             days.add(str(day))
+    tc_days_raw = tc_data.get("daily") or []
+    for item in tc_days_raw:
+        day = item.get("day")
+        if day:
+            days.add(str(day))
     ol_days_raw = ol_data.get("daily") or []
     for item in ol_days_raw:
         day = item.get("day")
@@ -322,16 +333,16 @@ def _combined_metrics_from_raw(raw):
         day = item.get("day")
         if day:
             days.add(str(day))
-    total_messages = cc_messages + cx_messages + oc_messages + cu_messages + tu_messages + hm_messages
+    total_messages = cc_messages + cx_messages + oc_messages + cu_messages + tu_messages + hm_messages + tc_messages
     total_days = len(days) or max(_safe_int(raw.get("cc_days")), _safe_int(raw.get("cx_days")), _safe_int(raw.get("oc_days")), _safe_int(raw.get("cu_days")), _safe_int(raw.get("tu_days")), _safe_int(raw.get("ol_days")))
 
     return {
         "messages": total_messages,
-        "lines_added": cc_added + cx_added + oc_added + cu_added + tu_added,
-        "lines_removed": cc_removed + cx_removed + oc_removed + cu_removed + tu_removed,
-        "files": cc_files + cx_files + oc_files + cu_files + tu_files,
+        "lines_added": cc_added + cx_added + oc_added + cu_added + tu_added + tc_added,
+        "lines_removed": cc_removed + cx_removed + oc_removed + cu_removed + tu_removed + tc_removed,
+        "files": cc_files + cx_files + oc_files + cu_files + tu_files + tc_files,
         "days": total_days,
-        "sessions": cc_sessions + cx_sessions + oc_sessions + cu_sessions + tu_sessions + ol_sessions + hm_sessions,
+        "sessions": cc_sessions + cx_sessions + oc_sessions + cu_sessions + tu_sessions + ol_sessions + hm_sessions + tc_sessions,
         "cu_messages": cu_messages,
         "cu_lines_added": cu_added,
         "cu_lines_removed": cu_removed,
@@ -342,6 +353,8 @@ def _combined_metrics_from_raw(raw):
         "tu_lines_removed": tu_removed,
         "tu_files": tu_files,
         "tu_sessions": tu_sessions,
+        "tc_messages": tc_messages,
+        "tc_sessions": tc_sessions,
         "ol_sessions": ol_sessions,
         "hm_sessions": hm_sessions,
         "hm_messages": hm_messages,
@@ -399,6 +412,11 @@ def extract_member_data(filepath, name, display_name, data):
     trae_data = raw.get("tu_data") or {}
     trae_messages = int(raw.get("tu_messages", 0) or trae_data.get("total_messages", 0) or 0)
     trae_agent_count = int(trae_data.get("agent_count", 0) or 0)
+    # Trae CN fields
+    trae_cn_sessions = int(raw.get("tc_sessions", 0) or 0)
+    trae_cn_data = raw.get("tc_data") or {}
+    trae_cn_messages = int(raw.get("tc_messages", 0) or trae_cn_data.get("total_messages", 0) or 0)
+    trae_cn_agent_count = int(trae_cn_data.get("agent_count", 0) or 0)
     claude_sessions = int(raw.get("cc_sessions", 0) or 0)
     claude_tokens = int(raw.get("cc_tokens", 0) or 0)
     combined_metrics = _combined_metrics_from_raw(raw)
@@ -437,6 +455,9 @@ def extract_member_data(filepath, name, display_name, data):
         "trae_sessions": trae_sessions,
         "trae_messages": trae_messages,
         "trae_agent_count": trae_agent_count,
+        "trae_cn_sessions": trae_cn_sessions,
+        "trae_cn_messages": trae_cn_messages,
+        "trae_cn_agent_count": trae_cn_agent_count,
         "trae_data": trae_data,
         "openclaw_sessions": openclaw_sessions,
         "openclaw_data": openclaw_data,
@@ -511,6 +532,7 @@ def _aggregate_member_data(member_list):
                        "cursor_sessions", "cursor_messages", "cursor_lines_added",
                        "cursor_lines_removed", "cursor_files", "cursor_agent_count", "cursor_days",
                        "trae_sessions", "trae_messages", "trae_agent_count",
+                       "trae_cn_sessions", "trae_cn_messages", "trae_cn_agent_count",
                        "openclaw_sessions", "openclaw_days",
                        "hermes_sessions", "hermes_tokens", "hermes_messages",
                        "hermes_tool_calls", "hermes_days"]:
@@ -785,6 +807,9 @@ def generate_team_report(reports_dir, output_dir, members_path, period=None):
                 "trae_sessions": 0,
                 "trae_messages": 0,
                 "trae_agent_count": 0,
+                "trae_cn_sessions": 0,
+                "trae_cn_messages": 0,
+                "trae_cn_agent_count": 0,
                 "subtitle": source["subtitle"] if source else "",
                 "areas": source["areas"] if source else [],
                 "tools": source["tools"] if source else [],
@@ -827,6 +852,8 @@ def generate_team_report(reports_dir, output_dir, members_path, period=None):
         "cursor_lines_removed": sum(d.get("cursor_lines_removed", 0) for d in active_team),
         "trae_sessions": sum(d.get("trae_sessions", 0) for d in active_team),
         "trae_messages": sum(d.get("trae_messages", 0) for d in active_team),
+        "trae_cn_sessions": sum(d.get("trae_cn_sessions", 0) for d in active_team),
+        "trae_cn_messages": sum(d.get("trae_cn_messages", 0) for d in active_team),
         "openclaw_sessions": sum(d.get("openclaw_sessions", 0) for d in active_team),
         "hermes_sessions": sum(d.get("hermes_sessions", 0) for d in active_team),
         "hermes_tokens": sum(d.get("hermes_tokens", 0) for d in active_team),
@@ -868,6 +895,8 @@ def generate_team_report(reports_dir, output_dir, members_path, period=None):
         "cursor_messages": sum(d.get("cursor_messages", 0) for d in cumulative.values()),
         "trae_sessions": sum(d.get("trae_sessions", 0) for d in cumulative.values()),
         "trae_messages": sum(d.get("trae_messages", 0) for d in cumulative.values()),
+        "trae_cn_sessions": sum(d.get("trae_cn_sessions", 0) for d in cumulative.values()),
+        "trae_cn_messages": sum(d.get("trae_cn_messages", 0) for d in cumulative.values()),
         "openclaw_sessions": sum(d.get("openclaw_sessions", 0) for d in cumulative.values()),
         "hermes_sessions": sum(d.get("hermes_sessions", 0) for d in cumulative.values()),
         "hermes_tokens": sum(d.get("hermes_tokens", 0) for d in cumulative.values()),
@@ -933,6 +962,7 @@ def generate_team_report(reports_dir, output_dir, members_path, period=None):
     print(f"本周 CLI: Codex {cur['codex_sessions']:,} 会话 / {cur['codex_tokens']:,} tokens; OpenCode {cur['opencode_sessions']:,} 会话 / {cur['opencode_tokens']:,} tokens")
     print(f"本周 IDE: Cursor {cur['cursor_sessions']:,} 会话 / {cur['cursor_messages']:,} 消息 / +{cur['cursor_lines_added']:,}/-{cur['cursor_lines_removed']:,} 行")
     print(f"           Trae {cur['trae_sessions']:,} 会话 / {cur['trae_messages']:,} 消息")
+    print(f"        Trae CN {cur['trae_cn_sessions']:,} 会话 / {cur['trae_cn_messages']:,} 消息")
     print(f"           编排: OpenClaw {cur['openclaw_sessions']:,} 会话")
     print(f"           Hermes {cur['hermes_sessions']:,} 会话 / {cur['hermes_tokens']:,} tokens / {cur['hermes_tool_calls']:,} 工具调用")
     print(f"累计消息: {cum['messages']:,} ({cum['member_count']} 人)")
@@ -1382,6 +1412,28 @@ def _aggregate_trae_insights(team_data):
     }
 
 
+def _aggregate_trae_cn_insights(team_data):
+    """聚合团队 Trae CN 使用数据。"""
+    area_counter = Counter()
+
+    for member in team_data:
+        if member.get("status") != "submitted":
+            continue
+        tc_data = member.get("trae_cn_data") or {}
+        if not tc_data:
+            continue
+        for area in tc_data.get("areas", [])[:8]:
+            name = area.get("cwd")
+            if name:
+                area_counter[name] += int(area.get("sessions", 0) or 0)
+
+    top_areas = area_counter.most_common(5)
+
+    return {
+        "top_areas": top_areas,
+    }
+
+
 def _aggregate_openclaw_insights(team_data):
     agents_counter = Counter()
     sources_counter = Counter()
@@ -1485,6 +1537,40 @@ def _summarize_trae_team(team_data):
             f"Builder 模式占 {agent_ratio}%，{'Builder 使用率较高' if agent_ratio >= 50 else 'Chat 模式仍占主导'}。"
         )
         action = "如果 Trae 是团队战略 IDE，可以推进 .traerules 和项目级配置标准化。"
+
+    return {
+        "users": len(users),
+        "summary": summary,
+        "risks": risks,
+        "action": action,
+        "total_sessions": total_sessions,
+        "total_messages": total_messages,
+        "agent_ratio": agent_ratio,
+    }
+
+
+def _summarize_trae_cn_team(team_data):
+
+    """生成团队 Trae CN 使用总结。"""
+    users = [d for d in team_data if d.get("status") == "submitted" and d.get("trae_cn_sessions", 0) > 0]
+    total_sessions = sum(d.get("trae_cn_sessions", 0) for d in users)
+    total_messages = sum(d.get("trae_cn_messages", 0) for d in users)
+    total_agent = sum(d.get("trae_cn_agent_count", 0) for d in users)
+
+    agent_ratio = round(total_agent / max(total_sessions, 1) * 100)
+
+    if not users:
+        summary = "Trae CN 本周没有汇总到有效使用数据。"
+        risks = "可能是成员没有提交 Trae CN 采集，或者 Trae CN 不在团队主工作流中。"
+        action = "确认 Trae CN 数据源是否连接到周报采集流程。"
+    else:
+        summary = (
+            f"Trae CN 本周 {len(users)} 人使用，{total_sessions:,} 个会话，{total_messages:,} 条消息。"
+        )
+        risks = (
+            f"Builder 模式占 {agent_ratio}%，{'Builder 使用率较高' if agent_ratio >= 50 else 'Chat 模式仍占主导'}。"
+        )
+        action = "如果 Trae CN 是团队战略 IDE，可以推进 .traerules 和项目级配置标准化。"
 
     return {
         "users": len(users),
@@ -1735,6 +1821,8 @@ def generate_html(team_data, totals):
     cursor_team = _summarize_cursor_team(team_data)
     trae_summary = _aggregate_trae_insights(team_data)
     trae_team = _summarize_trae_team(team_data)
+    trae_cn_summary = _aggregate_trae_cn_insights(team_data)
+    trae_cn_team = _summarize_trae_cn_team(team_data)
     openclaw_summary = _aggregate_openclaw_insights(team_data)
     openclaw_team = _summarize_openclaw_team(team_data)
     hermes_summary = _aggregate_hermes_insights(team_data)
@@ -1934,6 +2022,18 @@ def generate_html(team_data, totals):
         <p class="tool-action">{_esc(trae_team["action"])}</p>
         <div class="tool-subtitle">活跃项目</div>
         <div class="pill-row">{_pill_list(trae_summary["top_areas"])}</div>
+      </div>
+
+      <div class="tool-card">
+        <div class="tool-card-head">
+          <span class="tool-name">Trae CN</span>
+          <span class="tool-stat">{trae_cn_team["users"]} 人 / {cur["trae_cn_sessions"]:,} 会话</span>
+        </div>
+        <p class="tool-summary">{_esc(trae_cn_team["summary"])}</p>
+        <p class="tool-risk">{_esc(trae_cn_team["risks"])}</p>
+        <p class="tool-action">{_esc(trae_cn_team["action"])}</p>
+        <div class="tool-subtitle">活跃项目</div>
+        <div class="pill-row">{_pill_list(trae_cn_summary["top_areas"])}</div>
       </div>
 
       <div class="tool-card">

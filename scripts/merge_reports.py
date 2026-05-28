@@ -48,6 +48,9 @@ def parse_hermes_report(path):
     return parse_embedded_json(path, "hermes-raw-data")
 
 
+def parse_trae_cn_report(path):
+    return parse_embedded_json(path, "trae-cn-raw-data")
+
 def parse_claude_report(path):
     return parse_embedded_json(path, "claude-raw-data")
 
@@ -231,7 +234,7 @@ def _banner_subrows(*rows):
     return "".join(parts)
 
 
-def _build_combined_banner(week, cc, cx, oc, cu, tu, ol, hm):
+def _build_combined_banner(week, cc, cx, oc, cu, tu, ol, hm, tc=None):
     cc_sessions = ___safe_int((cc or {}).get("cc_sessions"))
     cc_messages = ___safe_int((cc or {}).get("cc_messages"))
     cc_lines_added = ___safe_int((cc or {}).get("cc_lines_added"))
@@ -276,6 +279,9 @@ def _build_combined_banner(week, cc, cx, oc, cu, tu, ol, hm):
     hm_tokens = ___safe_int((hm or {}).get("total_tokens"))
     hm_days = ___safe_int((hm or {}).get("active_days"))
     hm_tool_calls = ___safe_int((hm or {}).get("tool_call_count"))
+    tc_sessions = ___safe_int((tc or {}).get("total_sessions"))
+    tc_messages = ___safe_int((tc or {}).get("total_messages"))
+    tc_agent = ___safe_int((tc or {}).get("agent_count"))
     cc_daily = (cc or {}).get("cc_daily") or []
     cx_daily = (cx or {}).get("daily") or []
     oc_daily = (oc or {}).get("daily") or []
@@ -283,7 +289,8 @@ def _build_combined_banner(week, cc, cx, oc, cu, tu, ol, hm):
     tu_daily = (tu or {}).get("daily") or []
     ol_daily = (ol or {}).get("daily") or []
     hm_daily = (hm or {}).get("daily") or []
-    active_day_set = _collect_active_days(cc_daily, cx_daily, oc_daily, cu_daily, tu_daily, ol_daily, hm_daily)
+    tc_daily = (tc or {}).get("daily") or []
+    active_day_set = _collect_active_days(cc_daily, cx_daily, oc_daily, cu_daily, tu_daily, ol_daily, hm_daily, tc_daily)
     total_days = len(active_day_set)
     cc_days = len(_collect_active_days(cc_daily))
     cx_days = len(_collect_active_days(cx_daily))
@@ -292,8 +299,8 @@ def _build_combined_banner(week, cc, cx, oc, cu, tu, ol, hm):
     tu_days = len(_collect_active_days(tu_daily))
     ol_days = len(_collect_active_days(ol_daily))
     hm_days = len(_collect_active_days(hm_daily))
-    total_sessions = cc_sessions + cx_sessions + oc_sessions + cu_sessions + tu_sessions + ol_sessions + hm_sessions
-    total_messages = cc_messages + cx_messages + oc_messages + cu_messages + tu_messages + hm_messages
+    total_sessions = cc_sessions + cx_sessions + oc_sessions + cu_sessions + tu_sessions + ol_sessions + hm_sessions + tc_sessions
+    total_messages = cc_messages + cx_messages + oc_messages + cu_messages + tu_messages + hm_messages + tc_messages
     total_lines_added = cc_lines_added + cx_lines_added + oc_lines_added + cu_lines_added + tu_lines_added
     total_lines_removed = cc_lines_removed + cx_lines_removed + oc_lines_removed + cu_lines_removed + tu_lines_removed
     total_tokens = cc_tokens + cx_tokens + oc_tokens + cu_tokens + tu_tokens + hm_tokens
@@ -304,12 +311,12 @@ def _build_combined_banner(week, cc, cx, oc, cu, tu, ol, hm):
     cu_msgs_per_day = round(cu_messages / cu_days, 1) if cu_days else 0
     msgs_per_day = round(total_messages / total_days, 1) if total_days else 0
     return f"""<div class="merge-banner">
-  <div class="merge-banner-head">Claude Code + Codex + OpenCode + Cursor + Trae + OpenClaw + Hermes 合并统计 · {escape(week)}</div>
+  <div class="merge-banner-head">Claude Code + Codex + OpenCode + Cursor + Trae + Trae CN + OpenClaw + Hermes 合并统计 · {escape(week)}</div>
   <div class="merge-banner-grid">
     <div class="merge-banner-item">
       <div class="merge-banner-value">{total_sessions}</div>
       <div class="merge-banner-label">总 SESSIONS</div>
-      <div class="merge-banner-sub">{_banner_subrows(f"CC {cc_sessions}", f"CX {cx_sessions}", f"OC {oc_sessions}", f"CU {cu_sessions}", f"TU {tu_sessions}", f"OL {ol_sessions}", f"HM {hm_sessions}")}</div>
+      <div class="merge-banner-sub">{_banner_subrows(f"CC {cc_sessions}", f"CX {cx_sessions}", f"OC {oc_sessions}", f"CU {cu_sessions}", f"TU {tu_sessions}", f"TC {tc_sessions}", f"OL {ol_sessions}", f"HM {hm_sessions}")}</div>
     </div>
     <div class="merge-banner-item">
       <div class="merge-banner-value">{_fmt(total_tokens)}</div>
@@ -679,6 +686,87 @@ def _build_trae_section(tu):
 
 
 
+
+
+def _build_trae_cn_section(tu):
+    if not tu or not tu.get("total_sessions"):
+        return """
+    <div class="merge-section">
+      <h2>Trae CN</h2>
+      <div class="merge-card">
+        <div class="merge-card-title">No Trae CN sessions this week</div>
+        <div class="merge-card-text">Check workspaceStorage for Trae CN session data.</div>
+      </div>
+    </div>"""
+
+    total_sessions = ___safe_int(tu.get("total_sessions", 0))
+    total_messages = ___safe_int(tu.get("total_messages", 0))
+    agent_count = ___safe_int(tu.get("agent_count", 0))
+    chat_count = ___safe_int(tu.get("chat_count", 0))
+    areas = tu.get("areas", [])[:5]
+    insights = tu.get("insights") or {}
+
+    area_pills = "".join(
+        f'<span class="merge-pill">{escape(str(a.get("cwd", "")))} <b>{a.get("sessions", "")}</b></span>'
+        for a in areas
+    ) or '<span class="merge-empty">N/A</span>'
+
+    usage_cards = ""
+    for item in (insights.get("usage_cards") or [])[:3]:
+        title = escape(str(item.get("title", "")))
+        value = escape(str(item.get("value", "")))
+        desc = escape(str(item.get("desc", "")))
+        usage_cards += '      <div class="merge-card">\n' \
+            f'        <div class="merge-card-title">{title}</div>\n' \
+            f'        <div class="merge-card-value">{value}</div>\n' \
+            f'        <div class="merge-card-text">{desc}</div>\n' \
+            '      </div>\n'
+
+    wins_html = ""
+    for item in (insights.get("wins") or [])[:3]:
+        wins_html += f'<div class="merge-card"><div class="merge-card-title">{escape(str(item.get("title", "")))}</div><div class="merge-card-text">{escape(str(item.get("detail", "")))}</div></div>'
+
+    section = f"""
+    <div class="merge-section">
+      <h2>Trae CN</h2>
+      <p class="merge-section-sub">WorkspaceStorage memento data, Builder/Chat mode analysis.</p>
+
+      <div class="merge-stat-row">
+        <div class="merge-stat">
+          <div class="merge-stat-value">{total_sessions}</div>
+          <div class="merge-stat-label">Sessions</div>
+        </div>
+        <div class="merge-stat">
+          <div class="merge-stat-value">{total_messages}</div>
+          <div class="merge-stat-label">Messages</div>
+        </div>
+        <div class="merge-stat">
+          <div class="merge-stat-value">{agent_count}/{chat_count}</div>
+          <div class="merge-stat-label">Builder/Chat</div>
+        </div>
+        <div class="merge-stat">
+          <div class="merge-stat-value">{len(areas)}</div>
+          <div class="merge-stat-label">Projects</div>
+        </div>
+      </div>
+
+      <h3 class="merge-subhead">How You Use Trae CN</h3>
+      <div class="merge-card-grid">
+{usage_cards}
+      </div>
+
+      <h3 class="merge-subhead">Active Projects</h3>
+      <div class="merge-pill-row">{area_pills}</div>
+"""
+    if wins_html:
+        section += f"""
+      <h3 class="merge-subhead">Highlights</h3>
+      <div class="merge-card-grid">
+{wins_html}
+      </div>
+"""
+    section += "    </div>"
+    return section
 def _build_openclaw_section(ol):
     if not ol:
         return """<section class="merge-section">
@@ -921,7 +1009,7 @@ def _build_merge_style():
 </style>"""
 
 
-def merge(claude_path, codex_path, opencode_path, cursor_path, trae_path, openclaw_path=None, hermes_path=None, out_path=None, week=None):
+def merge(claude_path, codex_path, opencode_path, cursor_path, trae_path, openclaw_path=None, hermes_path=None, trae_cn_path=None, out_path=None, week=None):
     # Handle backwards compat: openclaw_path and hermes_path might be passed as out_path/week
     # This handles the case where old code calls with 7 positional args
     if out_path is None:
@@ -932,6 +1020,11 @@ def merge(claude_path, codex_path, opencode_path, cursor_path, trae_path, opencl
         opencode_path = openclaw_path or ""
         openclaw_path = ""
         hermes_path = ""
+    elif trae_cn_path is None:
+        # Called with 9 args (before trae_cn was added)
+        trae_cn_path = ""
+        if hermes_path is None:
+            hermes_path = ""
     elif hermes_path is None:
         hermes_path = ""
     if not out_path:
@@ -966,14 +1059,16 @@ def merge(claude_path, codex_path, opencode_path, cursor_path, trae_path, opencl
     tu = parse_trae_report(trae_path)
     ol = parse_openclaw_report(openclaw_path)
     hm = parse_hermes_report(hermes_path)
+    tc = parse_trae_cn_report(trae_cn_path)
 
     style_block = _build_merge_style()
-    banner = _build_combined_banner(week, cc_raw, cx, oc, cu, tu, ol, hm)
+    banner = _build_combined_banner(week, cc_raw, cx, oc, cu, tu, ol, hm, tc)
     codex_section = _build_codex_section(cx)
     cursor_section = _build_cursor_section(cu)
     trae_section = _build_trae_section(tu)
     opencode_section = _build_opencode_section(oc)
     openclaw_section = _build_openclaw_section(ol)
+    trae_cn_section = _build_trae_cn_section(tc)
     hermes_section = _build_hermes_section(hm)
     has_claude_data = bool(
         ___safe_int(cc_raw.get("cc_sessions")) or ___safe_int(cc_raw.get("cc_messages")) or ___safe_int(cc_raw.get("cc_tokens"))
@@ -1010,6 +1105,11 @@ def merge(claude_path, codex_path, opencode_path, cursor_path, trae_path, opencl
         "hm_tokens": ___safe_int((hm or {}).get("total_tokens")),
         "hm_days": ___safe_int((hm or {}).get("active_days")),
         "hm_data": hm,
+        "tc_sessions": ___safe_int((tc or {}).get("total_sessions")),
+        "tc_messages": ___safe_int((tc or {}).get("total_messages")),
+        "tc_days": ___safe_int((tc or {}).get("active_days")),
+        "tc_agent_count": ___safe_int((tc or {}).get("agent_count")),
+        "tc_data": tc,
     }
     raw_block = f'<div class="raw-data" id="combined-raw-data">{json.dumps(combined_raw, ensure_ascii=False)}</div>'
 
@@ -1026,7 +1126,7 @@ def merge(claude_path, codex_path, opencode_path, cursor_path, trae_path, opencl
             count=1,
         )
 
-    injection = "\n".join(part for part in [codex_section, opencode_section, cursor_section, trae_section, openclaw_section, hermes_section, raw_block] if part)
+    injection = "\n".join(part for part in [codex_section, opencode_section, cursor_section, trae_section, openclaw_section, hermes_section, trae_cn_section, raw_block] if part)
     body_end = html.rfind("</body>")
     if body_end == -1:
         raise RuntimeError("无效的 Claude HTML：未找到 </body>")
@@ -1055,7 +1155,9 @@ if __name__ == "__main__":
     elif argc == 9:
         merge(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6], "", sys.argv[7], sys.argv[8])
     elif argc == 10:
-        merge(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6], sys.argv[7], sys.argv[8], sys.argv[9])
+        merge(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6], sys.argv[7], "", sys.argv[8], sys.argv[9])
+    elif argc == 11:
+        merge(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6], sys.argv[7], sys.argv[8], sys.argv[9], sys.argv[10])
     else:
-        print("Usage: merge_reports.py <claude.html> <codex.html> [opencode.html] [cursor.html] [trae.html] [openclaw.html] [hermes.html] <out.html> <week>", file=sys.stderr)
+        print("Usage: merge_reports.py <claude.html> <codex.html> [opencode.html] [cursor.html] [trae.html] [openclaw.html] [hermes.html] [trae_cn.html] <out.html> <week>", file=sys.stderr)
         sys.exit(1)

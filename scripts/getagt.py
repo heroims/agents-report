@@ -498,6 +498,25 @@ def generate_trae_report(period, name):
     except subprocess.CalledProcessError:
         return None
     return out_path if out_path.exists() else None
+def generate_trae_cn_report(period, name):
+    """采集 Trae CN 报告；失败时返回 None（不阻断主流程）。"""
+    if sys.platform == "darwin":
+        trae_cn_ws = Path.home() / "Library" / "Application Support" / "Trae CN" / "User" / "workspaceStorage"
+    elif sys.platform == "win32":
+        trae_cn_ws = Path(os.environ.get("APPDATA", "")) / "Trae CN" / "User" / "workspaceStorage"
+    else:
+        xdg = os.environ.get("XDG_CONFIG_HOME", str(Path.home() / ".config"))
+        trae_cn_ws = Path(xdg) / "Trae CN" / "User" / "workspaceStorage"
+
+    if not trae_cn_ws.exists() or not any(trae_cn_ws.iterdir()):
+        return None
+
+    out_path = Path(tempfile.gettempdir()) / f"{name}-trae-cn-{period}.html"
+    try:
+        run([sys.executable, str(PROJECT_DIR / "scripts" / "collect_trae_cn.py"), period, f"--output={out_path}"])
+    except subprocess.CalledProcessError:
+        return None
+    return out_path if out_path.exists() else None
 
 def generate_openclaw_report(period, name):
     """采集 OpenClaw 报告；失败时返回 None（不阻断主流程）。"""
@@ -546,7 +565,7 @@ def load_group(name):
     return "group"
 
 
-def archive_report(period, name, codex_report, opencode_report, cursor_report=None, trae_report=None, openclaw_report=None, hermes_report=None):
+def archive_report(period, name, codex_report, opencode_report, cursor_report=None, trae_report=None, openclaw_report=None, hermes_report=None, trae_cn_report=None):
     group = load_group(name)
     output_dir = PROJECT_DIR / "reports" / period / group
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -564,6 +583,7 @@ def archive_report(period, name, codex_report, opencode_report, cursor_report=No
             str(trae_report or ""),
             str(openclaw_report or ""),
             str(hermes_report or ""),
+            str(trae_cn_report or ""),
             str(final_report),
             period,
         ]
@@ -650,7 +670,8 @@ def main():
         trae_report = generate_trae_report(period, name)
         openclaw_report = generate_openclaw_report(period, name)
         hermes_report = generate_hermes_report(period, name)
-        final_report = archive_report(period, name, codex_report, opencode_report, cursor_report, trae_report, openclaw_report, hermes_report)
+        trae_cn_report = generate_trae_cn_report(period, name)
+        final_report = archive_report(period, name, codex_report, opencode_report, cursor_report, trae_report, openclaw_report, hermes_report, trae_cn_report)
         inject_environment_report(final_report, collect_environment())
         report_url = os.environ.get("AGENTS_REPORT_URL", "").strip()
         if not args.skip_git:
