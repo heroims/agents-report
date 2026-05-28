@@ -102,8 +102,37 @@ export AI_MODEL=gpt-4o
 5. 若设置了 `AGENTS_REPORT_URL`：通过 `POST /api/analyze` 委托 Dashboard 服务端执行；否则本地生成
 6. 输出到 `reports/{period}/team-report.html`
 
----
+## 定时上报管理 (`setup-schedule` / `teardown-schedule`)
 
+团队每个成员都可以通过指令开启或关闭定时自动上报。指令会根据运行环境自动选择最佳方案：
+- **Codex**：通过 `codex_app__automation_update` 创建托管自动化
+- **Claude Code / 其他**：回退至系统调度（macOS launchd / Linux crontab / Windows schtasks）
+
+### 在 Agent 中执行
+
+```text
+/setup-schedule      # 一键创建周报+月报+季报+年报四个定时任务
+/teardown-schedule    # 暂停或删除所有已创建的定时上报任务
+```
+
+- Codex：指令由 [`.agents/skills/source-command-setup-schedule/SKILL.md`](.agents/skills/source-command-setup-schedule/SKILL.md) 驱动
+- Claude Code：指令由 [`.claude/commands/setup-schedule.md`](.claude/commands/setup-schedule.md) 驱动，含自动回退逻辑
+
+### 直接运行脚本（跳过 Agent）
+
+```bash
+python3 scripts/schedule_setup.py     # 安装系统调度定时任务
+python3 scripts/schedule_teardown.py  # 移除系统调度定时任务
+```
+
+### 调度规则
+
+| 任务 | 频率 | 执行时间 |
+|------|------|----------|
+| 提交个人周报 | 每周 | 周一 09:00 |
+| 提交个人月报 | 每月 | 1 日 09:00 |
+| 提交个人季报 | 每季度 | 1/4/7/10 月 1 日 09:00 |
+| 提交个人年报 | 每年 | 1 月 1 日 09:00 |
 ## 启动 Dashboard（可选）
 
 Dashboard 提供 Web 界面浏览团队报告，支持 AI 摘要和问答。仅 Dashboard 需要额外安装依赖。
@@ -197,6 +226,8 @@ reports/
 │   ├── collect_openclaw.py   # OpenClaw 数据采集（标准库）
 │   ├── collect_hermes.py     # Hermes 数据采集（标准库）
 │   ├── merge_reports.py      # 多工具报告合并（标准库）
+│   ├── schedule_setup.py      # 定时上报安装（launchd/crontab/schtasks）
+│   ├── schedule_teardown.py   # 定时上报卸载
 │   ├── members.json          # 成员→分组映射
 │   └── exclude_paths.json    # 路径排除配置
 ├── dashboard/
@@ -206,11 +237,15 @@ reports/
 │   ├── gitlab_client.py      # GitLab API 客户端
 │   └── requirements.txt      # pip 替代依赖声明
 ├── .claude/commands/
-│   ├── getagt.md             # Claude Code slash command
-│   └── analyzeagt.md
+│   ├── getagt.md
+│   ├── analyzeagt.md
+│   ├── setup-schedule.md     # 一键开启定时上报
+│   └── teardown-schedule.md  # 一键关闭定时上报
 ├── .agents/skills/
-│   ├── source-command-getagt/SKILL.md      # Codex agent skill
-│   └── source-command-analyzeagt/SKILL.md
+│   ├── source-command-getagt/
+│   ├── source-command-analyzeagt/
+│   ├── source-command-setup-schedule/
+│   └── source-command-teardown-schedule/
 └── reports/                  # 报告存档目录（git tracked）
 ```
 
