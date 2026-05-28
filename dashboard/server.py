@@ -171,7 +171,7 @@ def api_ai_summary():
     data = _cache.get_data(group, week)
     prompt = _build_summary_prompt(data, lang)
     try:
-        summary = _call_anthropic(prompt, model='claude-sonnet-4-6')
+        summary = _call_ai(prompt, model=None)
     except EnvironmentError as e:
         app.logger.error("AI summary failed: %s", e)
         return jsonify({'summary': None, 'error': f'AI 未配置：{e}'})
@@ -181,7 +181,7 @@ def api_ai_summary():
         if 'timed out' in msg or 'Timeout' in msg:
             reason = 'AI 请求超时，请稍后重试'
         elif 'invalid_api_key' in msg or '401' in msg:
-            reason = 'API Key 无效，请检查 AI_API_KEY 配置'
+            reason = 'API Key 无效，请检查 AI 配置'
         elif '400' in msg:
             reason = f'请求参数错误：{msg[:120]}'
         else:
@@ -217,7 +217,7 @@ def api_ai_summary_stream():
 
     def generate():
         try:
-            for text in _call_anthropic_stream(prompt, {}, model='claude-sonnet-4-6', system_override=''):
+            for text in _call_ai_stream(prompt, {}, model=None, system_override=''):
                 chunks.append(text)
                 yield f'data: {json.dumps(text, ensure_ascii=False)}\n\n'
         except Exception as e:
@@ -241,7 +241,7 @@ def api_ai_chat():
 
     def generate():
         try:
-            for chunk in _call_anthropic_stream(question, context, model='qwen-plus'):
+            for chunk in _call_ai_stream(question, context, model=None):
                 # chunk is JSON-encoded; frontend must JSON.parse(e.data) to decode
                 yield f'data: {json.dumps(chunk, ensure_ascii=False)}\n\n'
         except Exception as e:
@@ -299,31 +299,74 @@ def _build_summary_prompt(data: dict, lang: str) -> str:
     )
 
 
-_AI_BASE = os.environ.get('AI_BASE_URL', 'https://xxx/v1')
+# ── AI Provider Configuration ──────────────────────────────────────────────
+# ── AI 配置（Docker 三变量即可控制） ──────────────────────────────────
+# AI_PROVIDER: openai_chat | openai_responses | anthropic
+# AI_API_KEY:  通用 API Key
+# AI_BASE_URL: 通用 Base URL（可选，各 provider 有默认值）
+
+import openai as _openai
+import anthropic as _anthropic
+
+AI_PROVIDER = os.environ.get('AI_PROVIDER', 'openai_chat')
+AI_API_KEY = os.environ.get('AI_API_KEY', '')
+AI_BASE_URL = os.environ.get('AI_BASE_URL', '')
+
+# 模型可选覆盖，不配用默认
+AI_MODEL = os.environ.get('AI_MODEL', '')
+OPENAI_CHAT_MODEL = os.environ.get('OPENAI_CHAT_MODEL', AI_MODEL or 'gpt-4o')
+OPENAI_RESPONSES_MODEL = os.environ.get('OPENAI_RESPONSES_MODEL', AI_MODEL or 'gpt-4o')
+CLAUDE_MODEL = os.environ.get('CLAUDE_MODEL', AI_MODEL or 'claude-sonnet-4-20250514')
+
+# 懒加载客户端
+_openai_client = None
+_anthropic_client = None
 
 
-def _ai_api_key() -> str | None:
-    return os.environ.get('AI_API_KEY', '') or None
+def _get_openai_client():
+    global _openai_client
+    if _openai_client is None:
+        if not AI_API_KEY:
+            raise EnvironmentError("AI_API_KEY 未配置")
+        base = AI_BASE_URL or 'https://api.openai.com/v1'
+        _openai_client = _openai.OpenAI(api_key=AI_API_KEY, base_url=base, timeout=60)
+    return _openai_client
 
 
-def _call_anthropic(prompt: str, model: str) -> str:
-    key = _ai_api_key()
-    if not key:
-        raise EnvironmentError("AI_API_KEY 未配置")
-    resp = req.post(
-        f'{_AI_BASE}/chat/completions',
-        json={'model': model, 'max_tokens': 600, 'messages': [{'role': 'user', 'content': prompt}]},
-        headers={'Authorization': f'Bearer {key}'},
-        timeout=60,
-    )
-    resp.raise_for_status()
-    return resp.json()['choices'][0]['message']['content']
+def _get_anthropic_client():
+    global _anthropic_client
+    if _anthropic_client is None:
+        if not AI_API_KEY:
+            raise EnvironmentError("AI_API_KEY 未配置")
+        base = AI_BASE_URL or 'https://api.anthropic.com'
+        _anthropic_client = _anthropic.Anthropic(api_key=AI_API_KEY, base_url=base, timeout=60)
+    return _anthropic_client
 
 
-def _call_anthropic_stream(question: str, context: dict, model: str, system_override: str | None = None):
-    key = _ai_api_key()
-    if not key:
-        raise EnvironmentError("AI_API_KEY 未配置")
+def _call_ai(prompt: str, model: str = None) -> str:
+    provider = AI_PROVIDER
+    if provider == 'anthropic':
+        client = _get_anthropic_client()
+        resp = client.messages.create(
+            model=model or CLAUDE_MODEL, max_tokens=600,
+            messages=[{'role': 'user', 'content': prompt}],
+        )
+        return resp.content[0].text
+    elif provider == 'openai_responses':
+        client = _get_openai_client()
+        resp = client.responses.create(model=model or OPENAI_RESPONSES_MODEL, input=prompt)
+        return resp.output_text
+    else:
+        client = _get_openai_client()
+        resp = client.chat.completions.create(
+            model=model or OPENAI_CHAT_MODEL, max_tokens=600,
+            messages=[{'role': 'user', 'content': prompt}],
+        )
+        return resp.choices[0].message.content or ''
+
+
+def _call_ai_stream(question: str, context: dict, model: str = None, system_override: str | None = None):
+    provider = AI_PROVIDER
     if system_override is not None:
         system = system_override
     else:
@@ -340,36 +383,28 @@ def _call_anthropic_stream(question: str, context: dict, model: str, system_over
             f"对话: {totals.get('messages', 0)}, 覆盖率: {totals.get('coverage_pct', 0)}%, "
             f"成员: {members_text}"
         )
-    messages = []
-    if system:
-        messages.append({'role': 'system', 'content': system})
-    messages.append({'role': 'user', 'content': question})
-    with req.post(
-        f'{_AI_BASE}/chat/completions',
-        json={
-            'model': model, 'max_tokens': 500, 'stream': True,
-            'messages': messages,
-        },
-        headers={'Authorization': f'Bearer {key}'},
-        stream=True,
-        timeout=60,
-    ) as resp:
-        resp.raise_for_status()
-        for raw in resp.iter_lines():
-            if not raw:
-                continue
-            line = raw.decode('utf-8') if isinstance(raw, bytes) else raw
-            if line.startswith('data:'):
-                payload = line[5:].strip()
-                if payload == '[DONE]':
-                    break
-                try:
-                    obj = json.loads(payload)
-                    text = obj['choices'][0]['delta'].get('content', '')
-                    if text:
-                        yield text
-                except (json.JSONDecodeError, KeyError, IndexError):
-                    pass
+
+    if provider == 'anthropic':
+        client = _get_anthropic_client()
+        kwargs = {'model': model or CLAUDE_MODEL, 'max_tokens': 500, 'messages': [{'role': 'user', 'content': question}]}
+        if system:
+            kwargs['system'] = system
+        with client.messages.stream(**kwargs) as stream:
+            for text in stream.text_stream:
+                yield text
+    else:
+        client = _get_openai_client()
+        messages = []
+        if system:
+            messages.append({'role': 'system', 'content': system})
+        messages.append({'role': 'user', 'content': question})
+        with client.chat.completions.create(
+            model=model or OPENAI_CHAT_MODEL, max_tokens=500, stream=True, messages=messages,
+        ) as stream:
+            for chunk in stream:
+                text = chunk.choices[0].delta.content
+                if text:
+                    yield text
 
 
 # ── startup ───────────────────────────────────────────────────────────────────

@@ -845,11 +845,13 @@ def generate_team_report(reports_dir, output_dir, members_path, period=None):
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(html)
 
-    # 若设置了 AGENTS_REPORT_URL，上传团队报告
+    # 若设置了 AGENTS_REPORT_URL，上传团队报告并刷新缓存
     report_url = os.environ.get("AGENTS_REPORT_URL", "").strip()
     if report_url:
         import urllib.request
-        target = f"{report_url.rstrip(chr(47))}/api/report/upload?name=team&period={latest_period}&group=team"
+        base = report_url.rstrip("/")
+        # 上传报告文件
+        target = f"{base}/api/report/upload?name=team&period={latest_period}&group=team"
         req = urllib.request.Request(target, data=html.encode("utf-8"), method="PUT")
         req.add_header("Content-Type", "text/html")
         try:
@@ -857,6 +859,11 @@ def generate_team_report(reports_dir, output_dir, members_path, period=None):
             print(f"团队报告已上传到 {report_url}", file=sys.stderr)
         except Exception as e:
             print(f"团队报告上传失败: {e}", file=sys.stderr)
+        # 刷新 Dashboard 缓存（确保 team-report.html 立即可见）
+        try:
+            urllib.request.urlopen(urllib.request.Request(f"{base}/api/refresh", method="POST"), timeout=10)
+        except Exception:
+            pass
 
 
     # 清理旧的按周文件和软链

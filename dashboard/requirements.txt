@@ -1,3 +1,4 @@
-flask
-requests
-pytest
+flask>=3.0
+requests>=2.31
+openai>=2.0
+anthropic>=0.100
