@@ -1,6 +1,6 @@
 # Agents Team Usage Collector
 
-团队成员通过 agent slash command 即可采集 Claude Code、Codex CLI、OpenCode、Cursor、Trae 使用数据，合并为单一报告并按周/月/季/年归档。核心采集脚本纯 Python 标准库实现，无需安装任何第三方依赖。
+团队成员通过 agent slash command 即可采集 Claude Code、Codex CLI、OpenCode、Cursor、Trae、OpenClaw、Hermes 使用数据，合并为单一报告并按周/月/季/年归档。核心采集脚本纯 Python 标准库实现，无需安装任何第三方依赖。
 
 可选附带 Flask Dashboard 用于团队报告汇总与 AI 摘要（Dashboard 需要额外安装依赖）。
 
@@ -9,7 +9,7 @@
 ## 环境要求
 
 - Python 3.12+（**核心采集仅需标准库，无需 pip/uv 安装任何包**）
-- 至少安装 Claude Code / Codex CLI / OpenCode / Cursor / Trae 其中之一
+- 至少安装 Claude Code / Codex CLI / OpenCode / Cursor / Trae / OpenClaw / Hermes 其中之一
 
 ## 可选：环境变量
 
@@ -63,7 +63,7 @@ export AI_MODEL=gpt-4o
 1. 通过 `git config user.name` 识别成员标识（slug 化后作为文件名前缀）
 2. 从 [`scripts/members.json`](scripts/members.json) 查找所属分组（key 为分组名，value 为成员列表；未匹配的默认为 `group`）
 3. 调用 `scripts/generate_insights_from_stats.py` 生成 Claude Code insights 报告
-4. 依次采集 Codex / OpenCode / Cursor / Trae 数据（可选数据源，任一失败不阻断主流程）
+4. 依次采集 Codex / OpenCode / Cursor / Trae / OpenClaw / Hermes 数据（可选数据源，任一失败不阻断主流程）
 5. 采集本机环境信息（JDK 版本、网络接口 IP）
 6. 通过 `scripts/merge_reports.py` 合并为单一 HTML
 7. 输出到 `reports/{period}/{group}/{name}-{period}-report.html`
@@ -194,6 +194,8 @@ reports/
 │   ├── collect_opencode.py   # OpenCode 数据采集（标准库）
 │   ├── collect_cursor.py     # Cursor 数据采集（标准库）
 │   ├── collect_trae.py       # Trae 数据采集（标准库）
+│   ├── collect_openclaw.py   # OpenClaw 数据采集（标准库）
+│   ├── collect_hermes.py     # Hermes 数据采集（标准库）
 │   ├── merge_reports.py      # 多工具报告合并（标准库）
 │   ├── members.json          # 成员→分组映射
 │   └── exclude_paths.json    # 路径排除配置
@@ -242,6 +244,19 @@ python3 scripts/collect_codex.py 2026-05 --output=/tmp/codex.html
 python3 scripts/merge_reports.py $HOME/.claude/usage-data/report.html /tmp/codex.html "" "" "" \
     reports/2026-05/group/{name}-2026-05-report.html 2026-05
 ```
+
+### OpenClaw 数据采集失败
+
+- OpenClaw 数据来自 `~/.openclaw/logs/commands.log`，该文件记录 session 创建和重置事件
+- 目前采集的指标：会话数、活跃天数、agent 分布、触发来源
+- 单独排查：`python3 scripts/collect_openclaw.py 2026-W22 --output=/tmp/test.html`
+- 注意：OpenClaw 目前仅跟踪会话启动事件，无法获取 token 消耗等执行细节
+
+### Hermes 数据采集失败
+
+- Hermes 数据来自 `~/.hermes/state.db`，包含 sessions 和 messages 两张表
+- 采集的指标：会话数、消息数、token（输入/输出/缓存/推理）、活跃天数、模型分布、工具调用
+- 单独排查：`python3 scripts/collect_hermes.py 2026-W22 --output=/tmp/test.html`
 
 ### OpenCode / Cursor / Trae 数据采集失败
 

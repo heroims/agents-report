@@ -1,9 +1,9 @@
 ---
-description: 采集 Claude Code + Codex + OpenCode + Cursor + Trae 使用数据并按周期归档
+description: 采集 Claude Code + Codex + OpenCode + Cursor + Trae + OpenClaw + Hermes 使用数据并按周期归档
 allowed-tools: Bash, Read, Glob
 ---
 
-采集当前用户的 Claude Code、Codex CLI、OpenCode、Cursor、Trae 使用数据，合并为单一报告并按周期（周/月/季/年）归档。
+采集当前用户的 Claude Code、Codex CLI、OpenCode、Cursor、Trae、OpenClaw、Hermes 使用数据，合并为单一报告并按周期（周/月/季/年）归档。
 
 ## 执行步骤（不要询问确认，直接执行）
 
@@ -20,7 +20,7 @@ allowed-tools: Bash, Read, Glob
 
 2. **确认输出**：脚本自动完成：
    - 生成 Claude Code insights 报告
-   - 采集 Codex/OpenCode/Cursor/Trae 数据（可选，失败不阻断）
+   - 采集 Codex/OpenCode/Cursor/Trae/OpenClaw/Hermes 数据（可选，失败不阻断）
    - 合并报告并按 `reports/{period}/{group}/{name}-{period}-report.html` 归档
    - 若设置了 `AGENTS_REPORT_URL` 则 HTTP PUT 上传到 dashboard，否则 git add/commit/push
 

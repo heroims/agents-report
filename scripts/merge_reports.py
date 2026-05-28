@@ -40,6 +40,14 @@ def parse_trae_report(path):
     return parse_embedded_json(path, "trae-raw-data")
 
 
+def parse_openclaw_report(path):
+    return parse_embedded_json(path, "openclaw-raw-data")
+
+
+def parse_hermes_report(path):
+    return parse_embedded_json(path, "hermes-raw-data")
+
+
 def parse_claude_report(path):
     return parse_embedded_json(path, "claude-raw-data")
 
@@ -223,7 +231,7 @@ def _banner_subrows(*rows):
     return "".join(parts)
 
 
-def _build_combined_banner(week, cc, cx, oc, cu, tu):
+def _build_combined_banner(week, cc, cx, oc, cu, tu, ol, hm):
     cc_sessions = ___safe_int((cc or {}).get("cc_sessions"))
     cc_messages = ___safe_int((cc or {}).get("cc_messages"))
     cc_lines_added = ___safe_int((cc or {}).get("cc_lines_added"))
@@ -260,23 +268,35 @@ def _build_combined_banner(week, cc, cx, oc, cu, tu):
     tu_days = ___safe_int((tu or {}).get("active_days"))
     tu_file_impact = ___safe_int((tu or {}).get("total_files"))
     tu_agent = ___safe_int((tu or {}).get("agent_count"))
+    ol_sessions = ___safe_int((ol or {}).get("total_sessions"))
+    ol_reset_events = ___safe_int((ol or {}).get("reset_events"))
+    ol_days = ___safe_int((ol or {}).get("active_days"))
+    hm_sessions = ___safe_int((hm or {}).get("total_sessions"))
+    hm_messages = ___safe_int((hm or {}).get("total_messages"))
+    hm_tokens = ___safe_int((hm or {}).get("total_tokens"))
+    hm_days = ___safe_int((hm or {}).get("active_days"))
+    hm_tool_calls = ___safe_int((hm or {}).get("tool_call_count"))
     cc_daily = (cc or {}).get("cc_daily") or []
     cx_daily = (cx or {}).get("daily") or []
     oc_daily = (oc or {}).get("daily") or []
     cu_daily = (cu or {}).get("daily") or []
     tu_daily = (tu or {}).get("daily") or []
-    active_day_set = _collect_active_days(cc_daily, cx_daily, oc_daily, cu_daily, tu_daily)
+    ol_daily = (ol or {}).get("daily") or []
+    hm_daily = (hm or {}).get("daily") or []
+    active_day_set = _collect_active_days(cc_daily, cx_daily, oc_daily, cu_daily, tu_daily, ol_daily, hm_daily)
     total_days = len(active_day_set)
     cc_days = len(_collect_active_days(cc_daily))
     cx_days = len(_collect_active_days(cx_daily))
     oc_days = len(_collect_active_days(oc_daily))
     cu_days = len(_collect_active_days(cu_daily))
     tu_days = len(_collect_active_days(tu_daily))
-    total_sessions = cc_sessions + cx_sessions + oc_sessions + cu_sessions + tu_sessions
-    total_messages = cc_messages + cx_messages + oc_messages + cu_messages + tu_messages
+    ol_days = len(_collect_active_days(ol_daily))
+    hm_days = len(_collect_active_days(hm_daily))
+    total_sessions = cc_sessions + cx_sessions + oc_sessions + cu_sessions + tu_sessions + ol_sessions + hm_sessions
+    total_messages = cc_messages + cx_messages + oc_messages + cu_messages + tu_messages + hm_messages
     total_lines_added = cc_lines_added + cx_lines_added + oc_lines_added + cu_lines_added + tu_lines_added
     total_lines_removed = cc_lines_removed + cx_lines_removed + oc_lines_removed + cu_lines_removed + tu_lines_removed
-    total_tokens = cc_tokens + cx_tokens + oc_tokens + cu_tokens + tu_tokens
+    total_tokens = cc_tokens + cx_tokens + oc_tokens + cu_tokens + tu_tokens + hm_tokens
     total_files = cc_files + cx_file_impact + oc_file_impact + cu_file_impact + tu_file_impact
     cc_msgs_per_day = round(cc_messages / cc_days, 1) if cc_days else 0
     cx_msgs_per_day = round(cx_messages / cx_days, 1) if cx_days else 0
@@ -284,22 +304,22 @@ def _build_combined_banner(week, cc, cx, oc, cu, tu):
     cu_msgs_per_day = round(cu_messages / cu_days, 1) if cu_days else 0
     msgs_per_day = round(total_messages / total_days, 1) if total_days else 0
     return f"""<div class="merge-banner">
-  <div class="merge-banner-head">Claude Code + Codex + OpenCode + Cursor + Trae 合并统计 · {escape(week)}</div>
+  <div class="merge-banner-head">Claude Code + Codex + OpenCode + Cursor + Trae + OpenClaw + Hermes 合并统计 · {escape(week)}</div>
   <div class="merge-banner-grid">
     <div class="merge-banner-item">
       <div class="merge-banner-value">{total_sessions}</div>
       <div class="merge-banner-label">总 SESSIONS</div>
-      <div class="merge-banner-sub">{_banner_subrows(f"CC {cc_sessions}", f"CX {cx_sessions}", f"OC {oc_sessions}", f"CU {cu_sessions}", f"TU {tu_sessions}")}</div>
+      <div class="merge-banner-sub">{_banner_subrows(f"CC {cc_sessions}", f"CX {cx_sessions}", f"OC {oc_sessions}", f"CU {cu_sessions}", f"TU {tu_sessions}", f"OL {ol_sessions}", f"HM {hm_sessions}")}</div>
     </div>
     <div class="merge-banner-item">
       <div class="merge-banner-value">{_fmt(total_tokens)}</div>
       <div class="merge-banner-label">总 Tokens</div>
-      <div class="merge-banner-sub">{_banner_subrows(f"CC {_fmt(cc_tokens)}", f"CX {_fmt(cx_tokens)}", f"OC {_fmt(oc_tokens)}", f"CU {_fmt(cu_tokens)}", f"TU {_fmt(tu_tokens)}")}</div>
+      <div class="merge-banner-sub">{_banner_subrows(f"CC {_fmt(cc_tokens)}", f"CX {_fmt(cx_tokens)}", f"OC {_fmt(oc_tokens)}", f"CU {_fmt(cu_tokens)}", f"TU {_fmt(tu_tokens)}", f"HM {_fmt(hm_tokens)}")}</div>
     </div>
     <div class="merge-banner-item">
       <div class="merge-banner-value">{total_messages}</div>
       <div class="merge-banner-label">总 MESSAGES</div>
-      <div class="merge-banner-sub">{_banner_subrows(f"CC {cc_messages}", f"CX {cx_messages}", f"OC {oc_messages}", f"CU {cu_messages}", f"TU {tu_messages}")}</div>
+      <div class="merge-banner-sub">{_banner_subrows(f"CC {cc_messages}", f"CX {cx_messages}", f"OC {oc_messages}", f"CU {cu_messages}", f"TU {tu_messages}", f"HM {hm_messages}")}</div>
     </div>
     <div class="merge-banner-item">
       <div class="merge-banner-value">+{total_lines_added:,}/-{total_lines_removed:,}</div>
@@ -314,7 +334,7 @@ def _build_combined_banner(week, cc, cx, oc, cu, tu):
     <div class="merge-banner-item">
       <div class="merge-banner-value">{total_days}</div>
       <div class="merge-banner-label">总 Days</div>
-      <div class="merge-banner-sub">{_banner_subrows(f"CC {cc_days}", f"CX {cx_days}", f"OC {oc_days}", f"CU {cu_days}", f"TU {tu_days}")}</div>
+      <div class="merge-banner-sub">{_banner_subrows(f"CC {cc_days}", f"CX {cx_days}", f"OC {oc_days}", f"CU {cu_days}", f"TU {tu_days}", f"OL {ol_days}", f"HM {hm_days}")}</div>
     </div>
     <div class="merge-banner-item">
       <div class="merge-banner-value">{msgs_per_day}</div>
@@ -659,6 +679,192 @@ def _build_trae_section(tu):
 
 
 
+def _build_openclaw_section(ol):
+    if not ol:
+        return """<section class="merge-section">
+  <div class="merge-section-head">
+    <div>
+      <h2>OpenClaw 深度洞察</h2>
+      <p class="merge-section-sub">本周仍保留空态区块，避免"看不到就像没这个工具"。</p>
+    </div>
+    <div class="merge-section-metric">无数据</div>
+  </div>
+  <div class="merge-card">
+    <div class="merge-card-title">本周未采集到 OpenClaw 会话</div>
+    <div class="merge-card-text">这不代表你没用 OpenClaw，只代表当前机器在本周没有可读的 OpenClaw 本地数据。请检查 ~/.openclaw/logs/commands.log 是否包含本周会话事件。</div>
+  </div>
+</section>"""
+    insights = ol.get("insights") or {}
+    at_a_glance = insights.get("at_a_glance") or {}
+    agents = ol.get("agents") or []
+    daily = ol.get("daily") or []
+
+    agent_pills = "".join(
+        f'<span class="merge-pill">{escape(str(a.get("name", "")))} <b>{a.get("sessions", "")}</b></span>'
+        for a in agents[:6]
+    ) or '<span class="merge-empty">暂无</span>'
+
+    return f"""<section class="merge-section">
+  <div class="merge-section-head">
+    <div>
+      <h2>OpenClaw 深度洞察</h2>
+      <p class="merge-section-sub">基于 commands.log 会话事件分析多 agent 编排模式。</p>
+    </div>
+    <div class="merge-section-metric">{___safe_int(ol.get("total_sessions"))} 会话 · {___safe_int(ol.get("active_days"))} 活跃天</div>
+  </div>
+  <div class="merge-glance">
+    <div class="merge-glance-item"><strong>What's working:</strong> {escape(str(at_a_glance.get("working", "暂无")))}</div>
+    <div class="merge-glance-item"><strong>What's hindering you:</strong> {escape(str(at_a_glance.get("hindering", "暂无")))}</div>
+    <div class="merge-glance-item"><strong>Quick wins to try:</strong> {escape(str(at_a_glance.get("quick_win", "暂无")))}</div>
+    <div class="merge-glance-item"><strong>On the horizon:</strong> {escape(str(at_a_glance.get("ambitious", "暂无")))}</div>
+  </div>
+
+  <h3 class="merge-subhead">Agent 分布</h3>
+  <div class="merge-pill-row">{agent_pills}</div>
+
+  <h3 class="merge-subhead">How You Use OpenClaw</h3>
+  <div class="merge-card merge-narrative">
+    <div class="merge-card-text">{escape(str((insights.get("narrative_parts") or [""])[0]))}</div>
+    <div class="merge-card-text">{escape(str((insights.get("narrative_parts") or ["", ""])[1]))}</div>
+    <div class="merge-card-text">{escape(str((insights.get("narrative_parts") or ["", "", ""])[2]))}</div>
+    <div class="merge-key">{escape(str(insights.get("key_insight") or ""))}</div>
+  </div>
+  <div class="merge-grid merge-grid-2">{_render_usage_cards(insights.get("usage_cards") or [], limit=4)}</div>
+
+  <div class="merge-grid merge-grid-3">
+    <div class="merge-card">
+      <div class="merge-card-title">新会话</div>
+      <div class="merge-kpi">{___safe_int(ol.get("total_sessions"))}</div>
+      <div class="merge-card-text">本周 OpenClaw 新会话数</div>
+    </div>
+    <div class="merge-card">
+      <div class="merge-card-title">活跃天数</div>
+      <div class="merge-kpi">{___safe_int(ol.get("active_days"))}</div>
+      <div class="merge-card-text">OpenClaw 会话覆盖天数</div>
+    </div>
+    <div class="merge-card">
+      <div class="merge-card-title">重置事件</div>
+      <div class="merge-kpi">{___safe_int(ol.get("reset_events"))}</div>
+      <div class="merge-card-text">会话重置次数</div>
+    </div>
+  </div>
+
+  <h3 class="merge-subhead">Impressive Things You Did</h3>
+  <div class="merge-grid merge-grid-2">{_render_text_cards(insights.get("wins") or [])}</div>
+
+  <h3 class="merge-subhead">Where Things Go Wrong</h3>
+  <div class="merge-grid merge-grid-2">{_render_text_cards(insights.get("friction") or [])}</div>
+
+  <h3 class="merge-subhead">Features to Try</h3>
+  <div class="merge-grid merge-grid-2">{_render_text_cards(insights.get("features") or [])}</div>
+
+  <h3 class="merge-subhead">New Ways to Use OpenClaw</h3>
+  <div class="merge-grid merge-grid-2">{_render_text_cards(insights.get("patterns") or [])}</div>
+
+  <h3 class="merge-subhead">On the Horizon</h3>
+  <div class="merge-grid merge-grid-2">{_render_text_cards(insights.get("horizon") or [])}</div>
+</section>"""
+
+
+def _build_hermes_section(hm):
+    if not hm:
+        return """<section class="merge-section">
+  <div class="merge-section-head">
+    <div>
+      <h2>Hermes 深度洞察</h2>
+      <p class="merge-section-sub">本周仍保留空态区块，避免"看不到就像没这个工具"。</p>
+    </div>
+    <div class="merge-section-metric">无数据</div>
+  </div>
+  <div class="merge-card">
+    <div class="merge-card-title">本周未采集到 Hermes 会话</div>
+    <div class="merge-card-text">这不代表你没用 Hermes，只代表当前机器在本周没有可读的 Hermes 本地数据。请检查 ~/.hermes/state.db 是否包含本周会话。</div>
+  </div>
+</section>"""
+    insights = hm.get("insights") or {}
+    at_a_glance = insights.get("at_a_glance") or {}
+    models = hm.get("models") or []
+    top_tools = hm.get("top_tools") or []
+
+    return f"""<section class="merge-section">
+  <div class="merge-section-head">
+    <div>
+      <h2>Hermes 深度洞察</h2>
+      <p class="merge-section-sub">基于 state.db 会话数据，分析模型使用、工具调用和执行模式。</p>
+    </div>
+    <div class="merge-section-metric">{___safe_int(hm.get("total_sessions"))} 会话 · {_fmt(hm.get("total_tokens"))} tokens</div>
+  </div>
+  <div class="merge-glance">
+    <div class="merge-glance-item"><strong>What's working:</strong> {escape(str(at_a_glance.get("working", "暂无")))}</div>
+    <div class="merge-glance-item"><strong>What's hindering you:</strong> {escape(str(at_a_glance.get("hindering", "暂无")))}</div>
+    <div class="merge-glance-item"><strong>Quick wins to try:</strong> {escape(str(at_a_glance.get("quick_win", "暂无")))}</div>
+    <div class="merge-glance-item"><strong>On the horizon:</strong> {escape(str(at_a_glance.get("ambitious", "暂无")))}</div>
+  </div>
+
+  <h3 class="merge-subhead">How You Use Hermes</h3>
+  <div class="merge-card merge-narrative">
+    <div class="merge-card-text">{escape(str((insights.get("narrative_parts") or [""])[0]))}</div>
+    <div class="merge-card-text">{escape(str((insights.get("narrative_parts") or ["", ""])[1]))}</div>
+    <div class="merge-card-text">{escape(str((insights.get("narrative_parts") or ["", "", ""])[2]))}</div>
+    <div class="merge-key">{escape(str(insights.get("key_insight") or ""))}</div>
+  </div>
+  <div class="merge-grid merge-grid-2">{_render_usage_cards(insights.get("usage_cards") or [], limit=4)}</div>
+
+  <div class="merge-grid merge-grid-4">
+    <div class="merge-card">
+      <div class="merge-card-title">模型</div>
+      <div class="merge-kpi">{escape(str((models[0] or {}).get("model", "N/A") if models else "N/A"))}</div>
+      <div class="merge-card-text">主力模型</div>
+    </div>
+    <div class="merge-card">
+      <div class="merge-card-title">工具调用</div>
+      <div class="merge-kpi">{___safe_int(hm.get("tool_call_count"))}</div>
+      <div class="merge-card-text">本周工具调用总数</div>
+    </div>
+    <div class="merge-card">
+      <div class="merge-card-title">Token 用量</div>
+      <div class="merge-kpi">{_fmt(hm.get("total_tokens"))}</div>
+      <div class="merge-card-text">输入+输出 token</div>
+    </div>
+    <div class="merge-card">
+      <div class="merge-card-title">活跃天数</div>
+      <div class="merge-kpi">{___safe_int(hm.get("active_days"))}</div>
+      <div class="merge-card-text">基于会话开始时间</div>
+    </div>
+  </div>
+
+  <div class="merge-grid merge-grid-3">
+    <div class="merge-card">
+      <div class="merge-card-title">模型分布</div>
+      <div class="merge-pill-row">{_render_pills(models, "model", "sessions", limit=6)}</div>
+    </div>
+    <div class="merge-card">
+      <div class="merge-card-title">高频工具</div>
+      <div class="merge-pill-row">{_render_pills(top_tools or [], "name", "count", limit=8)}</div>
+    </div>
+    <div class="merge-card">
+      <div class="merge-card-title">数据源</div>
+      <div class="merge-pill-row"><span class="merge-pill">state.db</span></div>
+    </div>
+  </div>
+
+  <h3 class="merge-subhead">Impressive Things You Did</h3>
+  <div class="merge-grid merge-grid-2">{_render_text_cards(insights.get("wins") or [])}</div>
+
+  <h3 class="merge-subhead">Where Things Go Wrong</h3>
+  <div class="merge-grid merge-grid-2">{_render_text_cards(insights.get("friction") or [])}</div>
+
+  <h3 class="merge-subhead">Features to Try</h3>
+  <div class="merge-grid merge-grid-2">{_render_text_cards(insights.get("features") or [])}</div>
+
+  <h3 class="merge-subhead">New Ways to Use Hermes</h3>
+  <div class="merge-grid merge-grid-2">{_render_text_cards(insights.get("patterns") or [])}</div>
+
+  <h3 class="merge-subhead">On the Horizon</h3>
+  <div class="merge-grid merge-grid-2">{_render_text_cards(insights.get("horizon") or [])}</div>
+</section>"""
+
+
 def _build_merge_style():
     return """<style>
 .merge-banner { margin: 0 0 24px; padding: 18px 22px; border-radius: 14px; border: 1px solid #c4b5fd; background: linear-gradient(135deg, #eef2ff 0%, #f5f3ff 100%); }
@@ -715,7 +921,23 @@ def _build_merge_style():
 </style>"""
 
 
-def merge(claude_path, codex_path, opencode_path, cursor_path, trae_path, out_path, week):
+def merge(claude_path, codex_path, opencode_path, cursor_path, trae_path, openclaw_path=None, hermes_path=None, out_path=None, week=None):
+    # Handle backwards compat: openclaw_path and hermes_path might be passed as out_path/week
+    # This handles the case where old code calls with 7 positional args
+    if out_path is None:
+        # Called as merge(claude, codex, opencode, cursor, trae, out, week) - old style
+        out_path, week = trae_path, openclaw_path
+        trae_path, openclaw_path = cursor_path, None
+        cursor_path, hermes_path = opencode_path, None
+        opencode_path = openclaw_path or ""
+        openclaw_path = ""
+        hermes_path = ""
+    elif hermes_path is None:
+        hermes_path = ""
+    if not out_path:
+        out_path = ""
+    if not week:
+        week = "unknown"
     with open(claude_path, "r", encoding="utf-8") as f:
         html = f.read()
 
@@ -742,13 +964,17 @@ def merge(claude_path, codex_path, opencode_path, cursor_path, trae_path, out_pa
     oc = parse_opencode_report(opencode_path)
     cu = parse_cursor_report(cursor_path)
     tu = parse_trae_report(trae_path)
+    ol = parse_openclaw_report(openclaw_path)
+    hm = parse_hermes_report(hermes_path)
 
     style_block = _build_merge_style()
-    banner = _build_combined_banner(week, cc_raw, cx, oc, cu, tu)
+    banner = _build_combined_banner(week, cc_raw, cx, oc, cu, tu, ol, hm)
     codex_section = _build_codex_section(cx)
     cursor_section = _build_cursor_section(cu)
     trae_section = _build_trae_section(tu)
     opencode_section = _build_opencode_section(oc)
+    openclaw_section = _build_openclaw_section(ol)
+    hermes_section = _build_hermes_section(hm)
     has_claude_data = bool(
         ___safe_int(cc_raw.get("cc_sessions")) or ___safe_int(cc_raw.get("cc_messages")) or ___safe_int(cc_raw.get("cc_tokens"))
     )
@@ -777,6 +1003,13 @@ def merge(claude_path, codex_path, opencode_path, cursor_path, trae_path, out_pa
         "tu_messages": ___safe_int((tu or {}).get("total_messages")),
         "tu_days": ___safe_int((tu or {}).get("active_days")),
         "tu_data": tu,
+        "ol_sessions": ___safe_int((ol or {}).get("total_sessions")),
+        "ol_days": ___safe_int((ol or {}).get("active_days")),
+        "ol_data": ol,
+        "hm_sessions": ___safe_int((hm or {}).get("total_sessions")),
+        "hm_tokens": ___safe_int((hm or {}).get("total_tokens")),
+        "hm_days": ___safe_int((hm or {}).get("active_days")),
+        "hm_data": hm,
     }
     raw_block = f'<div class="raw-data" id="combined-raw-data">{json.dumps(combined_raw, ensure_ascii=False)}</div>'
 
@@ -793,7 +1026,7 @@ def merge(claude_path, codex_path, opencode_path, cursor_path, trae_path, out_pa
             count=1,
         )
 
-    injection = "\n".join(part for part in [codex_section, opencode_section, cursor_section, trae_section, raw_block] if part)
+    injection = "\n".join(part for part in [codex_section, opencode_section, cursor_section, trae_section, openclaw_section, hermes_section, raw_block] if part)
     body_end = html.rfind("</body>")
     if body_end == -1:
         raise RuntimeError("无效的 Claude HTML：未找到 </body>")
@@ -810,19 +1043,19 @@ def merge(claude_path, codex_path, opencode_path, cursor_path, trae_path, out_pa
 
 if __name__ == "__main__":
     argc = len(sys.argv)
-    # merge(claude, codex, opencode, cursor, trae, out, week) — 7 positional args
+    # merge(claude, codex, opencode, cursor, trae, openclaw, hermes, out, week) — 9 positional args
     if argc == 5:
-        # 4 user args: claude, codex, out, week
-        merge(sys.argv[1], sys.argv[2], "", "", "", sys.argv[3], sys.argv[4])
+        merge(sys.argv[1], sys.argv[2], "", "", "", "", "", sys.argv[3], sys.argv[4])
     elif argc == 6:
-        # 5 user args: claude, codex, opencode, out, week
-        merge(sys.argv[1], sys.argv[2], sys.argv[3], "", "", sys.argv[4], sys.argv[5])
+        merge(sys.argv[1], sys.argv[2], sys.argv[3], "", "", "", "", sys.argv[4], sys.argv[5])
     elif argc == 7:
-        # 6 user args: claude, codex, opencode, cursor, out, week (no trae)
-        merge(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], "", sys.argv[5], sys.argv[6])
+        merge(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], "", "", "", sys.argv[5], sys.argv[6])
     elif argc == 8:
-        # 7 user args: claude, codex, opencode, cursor, trae, out, week
-        merge(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6], sys.argv[7])
+        merge(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], "", "", sys.argv[6], sys.argv[7])
+    elif argc == 9:
+        merge(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6], "", sys.argv[7], sys.argv[8])
+    elif argc == 10:
+        merge(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6], sys.argv[7], sys.argv[8], sys.argv[9])
     else:
-        print("Usage: merge_reports.py <claude.html> <codex.html> [opencode.html] [cursor.html] [trae.html] <out.html> <week>", file=sys.stderr)
+        print("Usage: merge_reports.py <claude.html> <codex.html> [opencode.html] [cursor.html] [trae.html] [openclaw.html] [hermes.html] <out.html> <week>", file=sys.stderr)
         sys.exit(1)

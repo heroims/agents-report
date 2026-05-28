@@ -499,6 +499,35 @@ def generate_trae_report(period, name):
         return None
     return out_path if out_path.exists() else None
 
+def generate_openclaw_report(period, name):
+    """采集 OpenClaw 报告；失败时返回 None（不阻断主流程）。"""
+    commands_log = Path.home() / ".openclaw" / "logs" / "commands.log"
+    if not commands_log.exists():
+        return None
+
+    out_path = Path(tempfile.gettempdir()) / f"{name}-openclaw-{period}.html"
+    try:
+        run([sys.executable, str(PROJECT_DIR / "scripts" / "collect_openclaw.py"), period, f"--output={out_path}"])
+    except subprocess.CalledProcessError:
+        return None
+    return out_path if out_path.exists() else None
+
+
+def generate_hermes_report(period, name):
+    """采集 Hermes 报告；失败时返回 None（不阻断主流程）。"""
+    hermes_db = Path.home() / ".hermes" / "state.db"
+    if not hermes_db.exists():
+        return None
+
+    out_path = Path(tempfile.gettempdir()) / f"{name}-hermes-{period}.html"
+    try:
+        run([sys.executable, str(PROJECT_DIR / "scripts" / "collect_hermes.py"), period, f"--output={out_path}"])
+    except subprocess.CalledProcessError:
+        return None
+    return out_path if out_path.exists() else None
+
+
+
 
 def load_group(name):
     """从 members.json 读取成员所属分组。JSON 格式: {"group": ["name1", {"slug": "Display"}, ...]}"""
@@ -517,7 +546,7 @@ def load_group(name):
     return "group"
 
 
-def archive_report(period, name, codex_report, opencode_report, cursor_report=None, trae_report=None):
+def archive_report(period, name, codex_report, opencode_report, cursor_report=None, trae_report=None, openclaw_report=None, hermes_report=None):
     group = load_group(name)
     output_dir = PROJECT_DIR / "reports" / period / group
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -533,6 +562,8 @@ def archive_report(period, name, codex_report, opencode_report, cursor_report=No
             str(opencode_report or ""),
             str(cursor_report or ""),
             str(trae_report or ""),
+            str(openclaw_report or ""),
+            str(hermes_report or ""),
             str(final_report),
             period,
         ]
@@ -617,7 +648,9 @@ def main():
         opencode_report = generate_opencode_report(period, name)
         cursor_report = generate_cursor_report(period, name)
         trae_report = generate_trae_report(period, name)
-        final_report = archive_report(period, name, codex_report, opencode_report, cursor_report, trae_report)
+        openclaw_report = generate_openclaw_report(period, name)
+        hermes_report = generate_hermes_report(period, name)
+        final_report = archive_report(period, name, codex_report, opencode_report, cursor_report, trae_report, openclaw_report, hermes_report)
         inject_environment_report(final_report, collect_environment())
         report_url = os.environ.get("AGENTS_REPORT_URL", "").strip()
         if not args.skip_git:

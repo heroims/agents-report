@@ -265,6 +265,8 @@ def _combined_metrics_from_raw(raw):
     oc_data = raw.get("oc_data") or {}
     cu_data = raw.get("cu_data") or {}
     tu_data = raw.get("tu_data") or {}
+    ol_data = raw.get("ol_data") or {}
+    hm_data = raw.get("hm_data") or {}
     cc_messages = _safe_int(raw.get("cc_messages"))
     cx_messages = _safe_int(cx_data.get("user_messages") or cx_data.get("total_messages"))
     oc_messages = _safe_int(oc_data.get("total_messages"))
@@ -293,6 +295,11 @@ def _combined_metrics_from_raw(raw):
     oc_sessions = _safe_int(raw.get("oc_sessions") or oc_data.get("total_sessions"))
     cu_sessions = _safe_int(raw.get("cu_sessions") or cu_data.get("total_sessions"))
     tu_sessions = _safe_int(raw.get("tu_sessions") or tu_data.get("total_sessions"))
+    ol_sessions = _safe_int(raw.get("ol_sessions") or ol_data.get("total_sessions"))
+    hm_sessions = _safe_int(raw.get("hm_sessions") or hm_data.get("total_sessions"))
+    hm_messages = _safe_int(raw.get("hm_messages") or hm_data.get("total_messages"))
+    hm_tokens = _safe_int(raw.get("hm_tokens") or hm_data.get("total_tokens"))
+    hm_tool_calls = _safe_int(hm_data.get("tool_call_count"))
 
     days = _collect_raw_days(raw.get("cc_daily") or [], cx_data.get("daily") or [], oc_data.get("daily") or [])
     cu_days_raw = cu_data.get("daily") or []
@@ -305,8 +312,18 @@ def _combined_metrics_from_raw(raw):
         day = item.get("day")
         if day:
             days.add(str(day))
-    total_messages = cc_messages + cx_messages + oc_messages + cu_messages + tu_messages
-    total_days = len(days) or max(_safe_int(raw.get("cc_days")), _safe_int(raw.get("cx_days")), _safe_int(raw.get("oc_days")), _safe_int(raw.get("cu_days")), _safe_int(raw.get("tu_days")))
+    ol_days_raw = ol_data.get("daily") or []
+    for item in ol_days_raw:
+        day = item.get("day")
+        if day:
+            days.add(str(day))
+    hm_days_raw = hm_data.get("daily") or []
+    for item in hm_days_raw:
+        day = item.get("day")
+        if day:
+            days.add(str(day))
+    total_messages = cc_messages + cx_messages + oc_messages + cu_messages + tu_messages + hm_messages
+    total_days = len(days) or max(_safe_int(raw.get("cc_days")), _safe_int(raw.get("cx_days")), _safe_int(raw.get("oc_days")), _safe_int(raw.get("cu_days")), _safe_int(raw.get("tu_days")), _safe_int(raw.get("ol_days")))
 
     return {
         "messages": total_messages,
@@ -314,7 +331,7 @@ def _combined_metrics_from_raw(raw):
         "lines_removed": cc_removed + cx_removed + oc_removed + cu_removed + tu_removed,
         "files": cc_files + cx_files + oc_files + cu_files + tu_files,
         "days": total_days,
-        "sessions": cc_sessions + cx_sessions + oc_sessions + cu_sessions + tu_sessions,
+        "sessions": cc_sessions + cx_sessions + oc_sessions + cu_sessions + tu_sessions + ol_sessions + hm_sessions,
         "cu_messages": cu_messages,
         "cu_lines_added": cu_added,
         "cu_lines_removed": cu_removed,
@@ -325,6 +342,11 @@ def _combined_metrics_from_raw(raw):
         "tu_lines_removed": tu_removed,
         "tu_files": tu_files,
         "tu_sessions": tu_sessions,
+        "ol_sessions": ol_sessions,
+        "hm_sessions": hm_sessions,
+        "hm_messages": hm_messages,
+        "hm_tokens": hm_tokens,
+        "hm_tool_calls": hm_tool_calls,
         "msgs_day": round(total_messages / total_days, 1) if total_days else 0,
     }
 
@@ -355,6 +377,15 @@ def extract_member_data(filepath, name, display_name, data):
     codex_insights = codex_data.get("insights") or {}
     opencode_data = raw.get("oc_data") or {}
     # Cursor 字段（来自合并报告 combined-raw-data JSON）
+    openclaw_sessions = int(raw.get("ol_sessions", 0) or 0)
+    openclaw_data = raw.get("ol_data") or {}
+    openclaw_days = int(raw.get("ol_days", 0) or openclaw_data.get("active_days", 0) or 0)
+    hermes_sessions = int(raw.get("hm_sessions", 0) or 0)
+    hermes_data = raw.get("hm_data") or {}
+    hermes_tokens = int(raw.get("hm_tokens", 0) or hermes_data.get("total_tokens", 0) or 0)
+    hermes_messages = int(raw.get("hm_messages", 0) or hermes_data.get("total_messages", 0) or 0)
+    hermes_tool_calls = int(hermes_data.get("tool_call_count", 0) or 0)
+    hermes_days = int(raw.get("hm_days", 0) or hermes_data.get("active_days", 0) or 0)
     cursor_sessions = int(raw.get("cu_sessions", 0) or 0)
     cursor_data = raw.get("cu_data") or {}
     cursor_messages = int(cursor_data.get("total_messages", 0) or 0)
@@ -407,6 +438,15 @@ def extract_member_data(filepath, name, display_name, data):
         "trae_messages": trae_messages,
         "trae_agent_count": trae_agent_count,
         "trae_data": trae_data,
+        "openclaw_sessions": openclaw_sessions,
+        "openclaw_data": openclaw_data,
+        "openclaw_days": openclaw_days,
+        "hermes_sessions": hermes_sessions,
+        "hermes_data": hermes_data,
+        "hermes_tokens": hermes_tokens,
+        "hermes_messages": hermes_messages,
+        "hermes_tool_calls": hermes_tool_calls,
+        "hermes_days": hermes_days,
         "codex_data": codex_data,
         "codex_insights": codex_insights,
         "opencode_data": opencode_data,
@@ -470,7 +510,10 @@ def _aggregate_member_data(member_list):
                        "claude_sessions", "claude_tokens", "combined_sessions",
                        "cursor_sessions", "cursor_messages", "cursor_lines_added",
                        "cursor_lines_removed", "cursor_files", "cursor_agent_count", "cursor_days",
-                       "trae_sessions", "trae_messages", "trae_agent_count"]:
+                       "trae_sessions", "trae_messages", "trae_agent_count",
+                       "openclaw_sessions", "openclaw_days",
+                       "hermes_sessions", "hermes_tokens", "hermes_messages",
+                       "hermes_tool_calls", "hermes_days"]:
             first[field] = first.get(field, 0) + other.get(field, 0)
         # days: 取最大值
         first["days"] = max(first.get("days", 0), other.get("days", 0))
@@ -784,6 +827,10 @@ def generate_team_report(reports_dir, output_dir, members_path, period=None):
         "cursor_lines_removed": sum(d.get("cursor_lines_removed", 0) for d in active_team),
         "trae_sessions": sum(d.get("trae_sessions", 0) for d in active_team),
         "trae_messages": sum(d.get("trae_messages", 0) for d in active_team),
+        "openclaw_sessions": sum(d.get("openclaw_sessions", 0) for d in active_team),
+        "hermes_sessions": sum(d.get("hermes_sessions", 0) for d in active_team),
+        "hermes_tokens": sum(d.get("hermes_tokens", 0) for d in active_team),
+        "hermes_tool_calls": sum(d.get("hermes_tool_calls", 0) for d in active_team),
         "avg_msgs_day": round(sum(d["msgs_day"] for d in active_team) / n, 1) if n else 0,
         "member_count": n,
         "expected_count": expected_total,
@@ -821,6 +868,10 @@ def generate_team_report(reports_dir, output_dir, members_path, period=None):
         "cursor_messages": sum(d.get("cursor_messages", 0) for d in cumulative.values()),
         "trae_sessions": sum(d.get("trae_sessions", 0) for d in cumulative.values()),
         "trae_messages": sum(d.get("trae_messages", 0) for d in cumulative.values()),
+        "openclaw_sessions": sum(d.get("openclaw_sessions", 0) for d in cumulative.values()),
+        "hermes_sessions": sum(d.get("hermes_sessions", 0) for d in cumulative.values()),
+        "hermes_tokens": sum(d.get("hermes_tokens", 0) for d in cumulative.values()),
+        "hermes_tool_calls": sum(d.get("hermes_tool_calls", 0) for d in cumulative.values()),
         "member_count": len(cumulative),
     }
 
@@ -882,6 +933,8 @@ def generate_team_report(reports_dir, output_dir, members_path, period=None):
     print(f"本周 CLI: Codex {cur['codex_sessions']:,} 会话 / {cur['codex_tokens']:,} tokens; OpenCode {cur['opencode_sessions']:,} 会话 / {cur['opencode_tokens']:,} tokens")
     print(f"本周 IDE: Cursor {cur['cursor_sessions']:,} 会话 / {cur['cursor_messages']:,} 消息 / +{cur['cursor_lines_added']:,}/-{cur['cursor_lines_removed']:,} 行")
     print(f"           Trae {cur['trae_sessions']:,} 会话 / {cur['trae_messages']:,} 消息")
+    print(f"           编排: OpenClaw {cur['openclaw_sessions']:,} 会话")
+    print(f"           Hermes {cur['hermes_sessions']:,} 会话 / {cur['hermes_tokens']:,} tokens / {cur['hermes_tool_calls']:,} 工具调用")
     print(f"累计消息: {cum['messages']:,} ({cum['member_count']} 人)")
     if totals["missing_members"]:
         print(f"本周缺报: {len(totals['missing_members'])} 人 -> " + ", ".join(totals["missing_members"]))
@@ -1329,7 +1382,89 @@ def _aggregate_trae_insights(team_data):
     }
 
 
+def _aggregate_openclaw_insights(team_data):
+    agents_counter = Counter()
+    sources_counter = Counter()
+    submitted = [d for d in team_data if d.get("status") == "submitted" and d.get("openclaw_sessions", 0) > 0]
+    for member in submitted:
+        od = member.get("openclaw_data") or {}
+        for agent in (od.get("agents") or []):
+            agents_counter[(agent.get("name") or "")] += _safe_int(agent.get("sessions"))
+        for src in (od.get("sources") or []):
+            sources_counter[(src.get("name") or "")] += _safe_int(src.get("sessions"))
+    return {
+        "top_agents": agents_counter.most_common(10),
+        "top_sources": sources_counter.most_common(5),
+    }
+
+
+def _aggregate_hermes_insights(team_data):
+    tools_counter = Counter()
+    models_counter = Counter()
+    submitted = [d for d in team_data if d.get("status") == "submitted" and d.get("hermes_sessions", 0) > 0]
+    for member in submitted:
+        hd = member.get("hermes_data") or {}
+        for tool in (hd.get("top_tools") or []):
+            tools_counter[(tool.get("name") or "")] += _safe_int(tool.get("count"))
+        for model in (hd.get("models") or []):
+            models_counter[(model.get("model") or "")] += _safe_int(model.get("sessions"))
+    return {
+        "top_tools": tools_counter.most_common(10),
+        "top_models": models_counter.most_common(10),
+    }
+
+
+def _summarize_openclaw_team(team_data):
+    users = [d for d in team_data if d.get("status") == "submitted" and d.get("openclaw_sessions", 0) > 0]
+    total_sessions = sum(d.get("openclaw_sessions", 0) for d in users)
+
+    if not users:
+        summary = "OpenClaw 本周没有汇总到有效使用数据。"
+        risks = "可能是成员没有提交 OpenClaw 采集，或 commands.log 在本周无新事件。"
+        action = "确认 ~/.openclaw/logs/commands.log 是否有本周会话创建事件。"
+    else:
+        summary = f"OpenClaw 本周 {len(users)} 人使用，{total_sessions:,} 个新会话。"
+        risks = "OpenClaw 当前只能跟踪会话创建事件，无法评估执行质量和 agent 内部行为。"
+        action = "如果 OpenClaw 是多 agent 编排入口，建议推进 agent 行为日志标准化。"
+
+    return {
+        "users": len(users),
+        "summary": summary,
+        "risks": risks,
+        "action": action,
+        "total_sessions": total_sessions,
+    }
+
+
+def _summarize_hermes_team(team_data):
+    users = [d for d in team_data if d.get("status") == "submitted" and d.get("hermes_sessions", 0) > 0]
+    total_sessions = sum(d.get("hermes_sessions", 0) for d in users)
+    total_tokens = sum(d.get("hermes_tokens", 0) for d in users)
+    total_tool_calls = sum(d.get("hermes_tool_calls", 0) for d in users)
+    avg_tool_calls = round(total_tool_calls / max(total_sessions, 1), 1)
+
+    if not users:
+        summary = "Hermes 本周没有汇总到有效使用数据。"
+        risks = "可能是成员没有提交 Hermes 采集，或 ~/.hermes/state.db 在本周无新会话。"
+        action = "确认 ~/.hermes/state.db 是否包含本周会话。"
+    else:
+        summary = f"Hermes 本周 {len(users)} 人使用，{total_sessions:,} 个会话，{total_tokens:,} tokens，{total_tool_calls:,} 次工具调用（平均 {avg_tool_calls}/会话）。"
+        risks = "Hermes 当前可见 token 和工具调用，但缺乏文件改动统计，执行闭环还需补全。"
+        action = "如果 Hermes 承担了工具密集型任务，可以推进 SOUL.md 和 skills 的标准化配置。"
+
+    return {
+        "users": len(users),
+        "summary": summary,
+        "risks": risks,
+        "action": action,
+        "total_sessions": total_sessions,
+        "total_tokens": total_tokens,
+        "total_tool_calls": total_tool_calls,
+    }
+
+
 def _summarize_trae_team(team_data):
+
     """生成团队 Trae 使用总结。"""
     users = [d for d in team_data if d.get("status") == "submitted" and d.get("trae_sessions", 0) > 0]
     total_sessions = sum(d.get("trae_sessions", 0) for d in users)
@@ -1600,6 +1735,10 @@ def generate_html(team_data, totals):
     cursor_team = _summarize_cursor_team(team_data)
     trae_summary = _aggregate_trae_insights(team_data)
     trae_team = _summarize_trae_team(team_data)
+    openclaw_summary = _aggregate_openclaw_insights(team_data)
+    openclaw_team = _summarize_openclaw_team(team_data)
+    hermes_summary = _aggregate_hermes_insights(team_data)
+    hermes_team = _summarize_hermes_team(team_data)
     team_judgement = _build_team_judgement(team_data, totals, claude_summary, codex_team, opencode_summary)
     codex_members = _top_codex_members(team_data)
     cursor_members = _top_cursor_members(team_data)
@@ -1795,6 +1934,34 @@ def generate_html(team_data, totals):
         <p class="tool-action">{_esc(trae_team["action"])}</p>
         <div class="tool-subtitle">活跃项目</div>
         <div class="pill-row">{_pill_list(trae_summary["top_areas"])}</div>
+      </div>
+
+      <div class="tool-card">
+        <div class="tool-card-head">
+          <span class="tool-name">OpenClaw</span>
+          <span class="tool-stat">{openclaw_team["users"]} 人 / {cur["openclaw_sessions"]:,} 会话</span>
+        </div>
+        <p class="tool-summary">{_esc(openclaw_team["summary"])}</p>
+        <p class="tool-risk">{_esc(openclaw_team["risks"])}</p>
+        <p class="tool-action">{_esc(openclaw_team["action"])}</p>
+        <div class="tool-subtitle">活跃 Agent</div>
+        <div class="pill-row">{_pill_list(openclaw_summary["top_agents"])}</div>
+        <div class="tool-subtitle">触发来源</div>
+        <div class="pill-row">{_pill_list(openclaw_summary["top_sources"])}</div>
+      </div>
+
+      <div class="tool-card">
+        <div class="tool-card-head">
+          <span class="tool-name">Hermes</span>
+          <span class="tool-stat">{hermes_team["users"]} 人 / {cur["hermes_sessions"]:,} 会话</span>
+        </div>
+        <p class="tool-summary">{_esc(hermes_team["summary"])}</p>
+        <p class="tool-risk">{_esc(hermes_team["risks"])}</p>
+        <p class="tool-action">{_esc(hermes_team["action"])}</p>
+        <div class="tool-subtitle">高频工具</div>
+        <div class="pill-row">{_pill_list(hermes_summary["top_tools"])}</div>
+        <div class="tool-subtitle">模型分布</div>
+        <div class="pill-row">{_pill_list(hermes_summary["top_models"])}</div>
       </div>
     </div>'''
 
