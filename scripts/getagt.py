@@ -428,6 +428,50 @@ def generate_claude_report(period):
     if not CLAUDE_REPORT.exists():
         raise RuntimeError("Claude 报告生成失败，请检查 ~/.claude/stats-cache.json 后重试")
 
+    # 中文模式下翻译 Claude Insights HTML
+    if os.environ.get("AGENTS_REPORT_LANG", "zh") == "zh":
+        _translate_claude_html(CLAUDE_REPORT)
+
+
+def _translate_claude_html(path):
+    """翻译 Claude Code Insights HTML 中的英文为中文。"""
+    import re
+    html = path.read_text(encoding="utf-8")
+    lang = os.environ.get("AGENTS_REPORT_LANG", "zh")
+    if lang != "zh":
+        return
+    # Use merge_reports translate logic
+    from i18n import T as _I, _ZH_MAP
+    t = _I("zh")
+    
+    # Phase 1: Dictionary replacement (longest-first to avoid partial matches)
+    # Build sorted list of EN→ZH pairs, longest key first
+    pairs = sorted(
+        ((k, v) for k, v in _ZH_MAP.items() 
+         if len(k) >= 4 and not any('\u4e00' <= c <= '\u9fff' for c in k)),
+        key=lambda x: -len(x[0])
+    )
+    
+    for en, zh in pairs:
+        if en in html:
+            html = html.replace(en, zh)
+    
+    # Phase 2: Handle "X messages across Y sessions" pattern
+    html = re.sub(
+        r'(\d+) messages across (\d+) sessions',
+        r'\1 条消息，跨越 \2 个会话',
+        html
+    )
+    
+    # Phase 3: Handle "Median: Xs • Average: Ys" pattern
+    html = re.sub(
+        r'Median: ([\d.]+)s \u2022 Average: ([\d.]+)s',
+        r'中位数：\1s • 平均值：\2s',
+        html
+    )
+    
+    path.write_text(html, encoding="utf-8")
+
 
 def generate_codex_report(period, name):
     if not CODEX_DB.exists():

@@ -15,6 +15,10 @@ _scripts_dir = str((__import__('pathlib').Path(__file__).resolve().parent))
 if _scripts_dir not in _sys.path:
     _sys.path.insert(0, _scripts_dir)
 from period_utils import detect_period_type, period_start_end, period_label as plabel
+from i18n import T as _I18nT
+_LANG = _I18nT.detect()
+_I18N = _I18nT(_LANG)
+_t = _I18N
 
 
 
@@ -1047,7 +1051,7 @@ def build_rich_insights(session_meta_records, facets_by_session, ws):
 
     glance = [
         {
-            "title": "What's working",
+            "title": _t("What's working"),
             "detail": (
                 f"You are using Claude Code as an execution system, not a chat sidebar. "
                 f"This week centered on {', '.join(top_goal_labels[:2]) or 'code work'}, and the strongest recurring win was still {top_success.lower()}. "
@@ -1055,7 +1059,7 @@ def build_rich_insights(session_meta_records, facets_by_session, ws):
             )
         },
         {
-            "title": "What's hindering you",
+            "title": _t("What's hindering you"),
             "detail": (
                 f"The main drag was still {top_friction.lower()}, and that matters because it wastes your time before the real work even begins. "
                 f"Claude helpfulness still skewed toward {top_helpfulness.lower()}, so the issue is not lack of capability; it is that the model still starts too many tasks with weak assumptions or the wrong output shape. "
@@ -1063,7 +1067,7 @@ def build_rich_insights(session_meta_records, facets_by_session, ws):
             )
         },
         {
-            "title": "Quick wins to try",
+            "title": _t("Quick wins to try"),
             "detail": (
                 f"The fastest win is to front-load output format, verification target, and tool boundaries before Claude touches {', '.join(top_tool_names) or 'its main tools'}. "
                 f"Your best sessions already behave this way: the task is framed as inspect -> change -> verify, not just 'look into this'. "
@@ -1071,7 +1075,7 @@ def build_rich_insights(session_meta_records, facets_by_session, ws):
             )
         },
         {
-            "title": "Ambitious workflows",
+            "title": _t("Ambitious workflows"),
             "detail": (
                 f"You are already operating close to autonomous engineering loops. "
                 f"With {task_agent_sessions} task-agent sessions, {web_enabled_sessions} web-enabled sessions, and heavy work across {', '.join(top_language_names) or 'mixed stacks'}, the next upgrade is not more prompts but fuller workflows: inspect -> patch -> rerun -> open result. "
@@ -1086,7 +1090,7 @@ def build_rich_insights(session_meta_records, facets_by_session, ws):
         f"The important nuance is that your friction profile is not a sign that Claude is failing outright. Outcomes skewed toward {top_outcome.lower()} and success skewed toward {top_success.lower()}, but the repeated cost was {top_friction.lower()}: wasted motion before convergence. In practice, that means your leverage now comes less from better answers and more from better entry constraints.",
     ]
 
-    key_insight = "Claude is most valuable for you when the task already has a concrete finish line; your main waste comes from letting the session spend too long discovering the shape of the task instead of executing it."
+    key_insight = _t("Claude is most valuable for you when the task already has a concrete finish line; your main waste comes from letting the session spend too long discovering the shape of the task instead of executing it.")
 
     periods = {
         "Morning (6-12)": 0,
@@ -1117,8 +1121,8 @@ def build_rich_insights(session_meta_records, facets_by_session, ws):
             break
     if not wins and session_meta_records:
         wins.append({
-            "title": "Real engineering progress",
-            "desc": "This week still contains real local Claude sessions with code reading, command execution, and iterative debugging.",
+            "title": _t("Real engineering progress"),
+            "desc": _t("This week still contains real local Claude sessions with code reading, command execution, and iterative debugging."),
         })
 
     frictions = []
@@ -1136,52 +1140,52 @@ def build_rich_insights(session_meta_records, facets_by_session, ws):
         for name, _ in friction_counter.most_common(3):
             frictions.append({
                 "title": _labelize(name),
-                "desc": "这一类摩擦在本周重复出现，说明它不是偶发问题，而是提示方式或任务边界定义的问题。",
+                "desc": _t("This friction type repeated this week, indicating it is not random but a prompting or task boundary definition issue."),
                 "examples": [],
             })
 
     features = [
         {
-            "title": "Custom Skills",
-            "why": "Your recurring workflows are already recognizable. A reusable skill can hard-code the order you clearly prefer: inspect -> run -> verify -> open result, so Claude spends less time rediscovering your operating style.",
+            "title": _t("Custom Skills"),
+            "why": _t("Your recurring workflows are already recognizable. A reusable skill can hard-code the order you clearly prefer."),
         },
         {
-            "title": "Hooks",
-            "why": "Post-edit or post-test hooks would turn some of this week's buggy-code and wrong-path friction into immediate feedback instead of another round-trip with you in the middle.",
+            "title": _t("Hooks"),
+            "why": _t("Post-edit or post-test hooks would turn buggy-code and wrong-path friction into immediate feedback."),
         },
         {
-            "title": "Project Instructions",
-            "why": "This week's misses suggest Claude still needs clearer standing constraints at the start, especially around output format, preferred tools, and what counts as done.",
+            "title": _t("Project Instructions"),
+            "why": _t("Claude still needs clearer standing constraints at the start, especially around output format and what counts as done."),
         },
     ]
 
     patterns = [
         {
-            "title": "Exploration becomes execution fastest when the target is concrete",
-            "summary": "Your best sessions had an explicit verify condition: run the check, generate the artifact, or open the result instead of ending on analysis complete.",
+            "title": _t("Exploration becomes execution fastest when the target is concrete"),
+            "summary": _t("Your best sessions had an explicit verify condition."),
         },
         {
-            "title": "Wrong-approach friction is still the primary waste source",
-            "summary": "Most of the pain this week was not inability, but wasted motion before Claude converged on the right path and right output shape.",
+            "title": _t("Wrong-approach friction is still the primary waste source"),
+            "summary": _t("Most of the pain was not inability, but wasted motion before Claude converged on the right path."),
         },
         {
-            "title": "Report-generating workflows are a good fit for automation",
-            "summary": "You already use Claude inside test and report loops. Those are strong candidates for commandized, repeatable flows because the finish line is objective.",
+            "title": _t("Report-generating workflows are a good fit for automation"),
+            "summary": _t("You already use Claude inside test and report loops, strong candidates for commandized repeatable flows."),
         },
     ]
 
     horizon = [
         {
-            "title": "Autonomous test-run + report loops",
-            "desc": "The most obvious next step is a single flow that reproduces a case, fixes it, reruns it, and opens the resulting report without manual coordination between stages.",
+            "title": _t("Autonomous test-run + report loops"),
+            "desc": _t("The most obvious next step is a single flow that reproduces a case, fixes it, reruns it, and opens the resulting report."),
         },
         {
-            "title": "Project inventory and compliance snapshots",
-            "desc": "Your exploration and documentation sessions can evolve into scheduled project snapshots that inventory implemented tests, module coverage, and environment drift.",
+            "title": _t("Project inventory and compliance snapshots"),
+            "desc": _t("Your exploration and documentation sessions can evolve into scheduled project snapshots."),
         },
         {
-            "title": "Claude as a repeatable QA operator",
-            "desc": "With tighter instructions, the current pattern of inspect -> execute -> verify can become a reliable weekly QA assistant rather than a session-by-session tool.",
+            "title": _t("Claude as a repeatable QA operator"),
+            "desc": _t("With tighter instructions, inspect -> execute -> verify can become a reliable weekly QA assistant."),
         },
     ]
 
@@ -1222,7 +1226,7 @@ def build_rich_insights(session_meta_records, facets_by_session, ws):
 
 def _render_bar_rows(items, color):
     if not items:
-        return '<p class="empty">No data available.</p>'
+        return f'<p class="empty">{_t("No data available.")}</p>'
     max_count = max(item["count"] for item in items) or 1
     rows = []
     for item in items:
@@ -1251,7 +1255,7 @@ def generate_html(period_str, period_start, period_end, ws, insights, source_sta
     if total_messages == 0 and total_sessions == 0 and source_status.get("issues"):
         issue_text = "；".join(source_status["issues"])
         data_warning_html = f"""    <div class="data-warning">
-      <strong>数据源缺失：</strong>{issue_text}。当前页面的 0 值不代表你这周没用 Claude，只代表本机本地源拿不到本周数据。
+      <strong>{_t("Data source missing:")}</strong>{issue_text}{_t("Zero values do not mean you did not use Claude this period, only that local data sources are unavailable.")}
     </div>
 """
 
@@ -1260,13 +1264,13 @@ def generate_html(period_str, period_start, period_end, ws, insights, source_sta
         work_on_html += f"""      <div class="project-area">
         <div class="area-header">
           <span class="area-name">{item['name']}</span>
-          <span class="area-count">~{item['sessions']} sessions</span>
+          <span class="area-count">~{item['sessions']} {_t("sessions")}</span>
         </div>
         <div class="area-desc">{item['desc']}</div>
       </div>
 """
     if not work_on_html:
-        work_on_html = '      <p class="empty">本周暂无足够的项目分布样本。</p>\n'
+        work_on_html = '      <p class="empty">{_t("No project distribution data for this period.")}</p>\n'
 
     goals_html = _render_bar_rows(
         [{"name": _labelize(name), "count": count} for name, count in insights["goal_counter"].most_common(6)],
@@ -1453,135 +1457,135 @@ def generate_html(period_str, period_start, period_end, ws, insights, source_sta
 </head>
 <body>
   <div class="container">
-    <h1>Claude Code Insights</h1>
-    <p class="subtitle">{total_messages} messages across {total_sessions} sessions | {period_start} to {period_end}</p>
+    <h1>{_t('Claude Code Insights')}</h1>
+    <p class="subtitle">{total_messages} {_t('messages across')} {total_sessions} {_t('sessions')} | {period_start} {_t('to')} {period_end}</p>
 {data_warning_html}
     <div class="at-a-glance">
-      <div class="glance-title">At a Glance</div>
+      <div class="glance-title">{_t('At a Glance')}</div>
       <div class="glance-sections">
 {glance_html}      </div>
     </div>
 
     <nav class="nav-toc">
-      <a href="#section-work">What You Work On</a>
-      <a href="#section-usage">How You Use CC</a>
-      <a href="#section-wins">Impressive Things</a>
-      <a href="#section-friction">Where Things Go Wrong</a>
-      <a href="#section-features">Features to Try</a>
-      <a href="#section-patterns">New Usage Patterns</a>
-      <a href="#section-horizon">On the Horizon</a>
+      <a href="#section-work">{_t("What You Work On")}</a>
+      <a href="#section-usage">{_t("How You Use CC")}</a>
+      <a href="#section-wins">{_t("Impressive Things")}</a>
+      <a href="#section-friction">{_t("Where Things Go Wrong")}</a>
+      <a href="#section-features">{_t("Features to Try")}</a>
+      <a href="#section-patterns">{_t("New Usage Patterns")}</a>
+      <a href="#section-horizon">{_t("On the Horizon")}</a>
     </nav>
 
     <div class="stats-row">
-      <div class="stat"><div class="stat-value">{total_messages}</div><div class="stat-label">Messages</div></div>
-      <div class="stat"><div class="stat-value">+{ws["estimated_lines"]:,}/-{ws.get("estimated_removed", ws["estimated_lines"] // 10):,}</div><div class="stat-label">Lines</div></div>
-      <div class="stat"><div class="stat-value">{estimated_files}</div><div class="stat-label">Files</div></div>
-      <div class="stat"><div class="stat-value">{active_days}</div><div class="stat-label">Days</div></div>
-      <div class="stat"><div class="stat-value">{msgs_per_day}</div><div class="stat-label">Msgs/Day</div></div>
+      <div class="stat"><div class="stat-value">{total_messages}</div><div class="stat-label">{_t("Messages")}</div></div>
+      <div class="stat"><div class="stat-value">+{ws["estimated_lines"]:,}/-{ws.get("estimated_removed", ws["estimated_lines"] // 10):,}</div><div class="stat-label">{_t("Lines")}</div></div>
+      <div class="stat"><div class="stat-value">{estimated_files}</div><div class="stat-label">{_t("Files")}</div></div>
+      <div class="stat"><div class="stat-value">{active_days}</div><div class="stat-label">{_t("Days")}</div></div>
+      <div class="stat"><div class="stat-value">{msgs_per_day}</div><div class="stat-label">{_t("Msgs/Day")}</div></div>
     </div>
 
-    <h2 id="section-work">What You Work On</h2>
+    <h2 id="section-work">{_t("What You Work On")}</h2>
     <div class="project-areas">
 {work_on_html}    </div>
 
     <div class="charts-row">
       <div class="chart-card">
-        <div class="chart-title">What You Wanted</div>
+        <div class="chart-title">{_t("What You Wanted")}</div>
 {goals_html}
       </div>
       <div class="chart-card">
-        <div class="chart-title">Top Tools Used</div>
+        <div class="chart-title">{_t("Top Tools Used")}</div>
 {tools_html}
       </div>
     </div>
 
     <div class="charts-row">
       <div class="chart-card">
-        <div class="chart-title">Languages</div>
+        <div class="chart-title">{_t("Languages")}</div>
 {languages_html}
       </div>
       <div class="chart-card">
-        <div class="chart-title">Session Types</div>
+        <div class="chart-title">{_t("Session Types")}</div>
 {session_types_html}
       </div>
     </div>
 
-    <h2 id="section-usage">How You Use Claude Code</h2>
+    <h2 id="section-usage">{_t("How You Use Claude Code")}</h2>
     <div class="narrative">
       <p>{insights["narrative_parts"][0]}</p>
       <p>{insights["narrative_parts"][1]}</p>
       <p>{insights["narrative_parts"][2]}</p>
-      <div class="key-insight"><strong>Key pattern:</strong> {insights["key_insight"]}</div>
+      <div class="key-insight"><strong>{_t("Key pattern:")}</strong> {insights["key_insight"]}</div>
     </div>
 
     <div class="chart-card" style="margin: 24px 0;">
-      <div class="chart-title">User Response Time Distribution</div>
+      <div class="chart-title">{_t("User Response Time Distribution")}</div>
 {response_html}
-      <div style="font-size: 12px; color: #64748b; margin-top: 8px;">Median: {insights["response_median"]}s • Average: {insights["response_avg"]}s</div>
+      <div style="font-size: 12px; color: #64748b; margin-top: 8px;">{_t("Median:")} {insights["response_median"]}s {_t("• Average:")} {insights["response_avg"]}s</div>
     </div>
 
     <div class="chart-card" style="margin: 24px 0;">
-      <div class="chart-title">Multi-Clauding (Parallel Sessions)</div>
+      <div class="chart-title">{_t("Multi-Clauding (Parallel Sessions)")}</div>
       <div style="display: flex; gap: 24px; margin: 12px 0;">
-        <div style="text-align: center;"><div style="font-size: 24px; font-weight: 700; color: #7c3aed;">{insights["overlap_events"]}</div><div style="font-size: 11px; color: #64748b; text-transform: uppercase;">Overlap Events</div></div>
-        <div style="text-align: center;"><div style="font-size: 24px; font-weight: 700; color: #7c3aed;">{insights["overlap_sessions"]}</div><div style="font-size: 11px; color: #64748b; text-transform: uppercase;">Sessions Involved</div></div>
-        <div style="text-align: center;"><div style="font-size: 24px; font-weight: 700; color: #7c3aed;">{round((insights["overlap_sessions"] / total_sessions) * 100) if total_sessions else 0}%</div><div style="font-size: 11px; color: #64748b; text-transform: uppercase;">Of Sessions</div></div>
+        <div style="text-align: center;"><div style="font-size: 24px; font-weight: 700; color: #7c3aed;">{insights["overlap_events"]}</div><div style="font-size: 11px; color: #64748b; text-transform: uppercase;">{_t("Overlap Events")}</div></div>
+        <div style="text-align: center;"><div style="font-size: 24px; font-weight: 700; color: #7c3aed;">{insights["overlap_sessions"]}</div><div style="font-size: 11px; color: #64748b; text-transform: uppercase;">{_t("Sessions Involved")}</div></div>
+        <div style="text-align: center;"><div style="font-size: 24px; font-weight: 700; color: #7c3aed;">{round((insights["overlap_sessions"] / total_sessions) * 100) if total_sessions else 0}%</div><div style="font-size: 11px; color: #64748b; text-transform: uppercase;">{_t("Of Sessions")}</div></div>
       </div>
     </div>
 
     <div class="charts-row">
       <div class="chart-card">
-        <div class="chart-title">User Messages by Time of Day</div>
+        <div class="chart-title">{_t("User Messages by Time of Day")}</div>
 {time_html}
       </div>
       <div class="chart-card">
-        <div class="chart-title">Tool Errors Encountered</div>
+        <div class="chart-title">{_t("Tool Errors Encountered")}</div>
 {tool_errors_html}
       </div>
     </div>
 
-    <h2 id="section-wins">Impressive Things You Did</h2>
-    <p class="section-intro">This section highlights the moments where Claude moved beyond chat and materially helped the work forward.</p>
+    <h2 id="section-wins">{_t("Impressive Things You Did")}</h2>
+    <p class="section-intro">{_t("This section highlights the moments where Claude moved beyond chat and materially helped the work forward.")}</p>
     <div class="big-wins">
 {wins_html}    </div>
 
     <div class="charts-row">
       <div class="chart-card">
-        <div class="chart-title">What Helped Most</div>
+        <div class="chart-title">{_t("What Helped Most")}</div>
 {success_html}
       </div>
       <div class="chart-card">
-        <div class="chart-title">Outcomes</div>
+        <div class="chart-title">{_t("Outcomes")}</div>
 {outcome_html}
       </div>
     </div>
 
-    <h2 id="section-friction">Where Things Go Wrong</h2>
-    <p class="section-intro">Your sessions still show repeated friction patterns. The goal here is not blame, but identifying where better constraints would save cycles.</p>
+    <h2 id="section-friction">{_t("Where Things Go Wrong")}</h2>
+    <p class="section-intro">{_t("Your sessions still show repeated friction patterns. The goal here is not blame, but identifying where better constraints could help.")}</p>
     <div class="friction-categories">
 {friction_html}    </div>
 
     <div class="charts-row">
       <div class="chart-card">
-        <div class="chart-title">Primary Friction Types</div>
+        <div class="chart-title">{_t("Primary Friction Types")}</div>
 {friction_bar_html}
       </div>
       <div class="chart-card">
-        <div class="chart-title">Inferred Satisfaction</div>
+        <div class="chart-title">{_t("Inferred Satisfaction")}</div>
 {satisfaction_html}
       </div>
     </div>
 
-    <h2 id="section-features">Existing CC Features to Try</h2>
+    <h2 id="section-features">{_t("Existing CC Features to Try")}</h2>
     <div class="features-section">
 {features_html}    </div>
 
-    <h2 id="section-patterns">New Ways to Use Claude Code</h2>
+    <h2 id="section-patterns">{_t("New Ways to Use Claude Code")}</h2>
     <div class="patterns-section">
 {patterns_html}    </div>
 
-    <h2 id="section-horizon">On the Horizon</h2>
-    <p class="section-intro">These are the next-step workflows your current usage pattern is already pointing toward.</p>
+    <h2 id="section-horizon">{_t("On the Horizon")}</h2>
+    <p class="section-intro">{_t("These are the next-step workflows your current usage pattern is already pointing toward.")}</p>
     <div class="horizon-section">
 {horizon_html}    </div>
 

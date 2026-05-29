@@ -2433,7 +2433,19 @@ if __name__ == "__main__":
         default="weekly",
         help="报告周期: weekly (周报, 默认), monthly (月报), quarterly (季报), annual (年报)",
     )
+    parser.add_argument(
+        "--lang", "-l",
+        choices=["zh", "en"],
+        default=None,
+        help="报告语言: zh (中文, 默认), en (英文). 默认从 AGENTS_REPORT_LANG 环境变量读取或根据提问语言自动判断",
+    )
     args, _ = parser.parse_known_args(sys.argv[1:])
+
+    # Set language for report generation
+    if args.lang:
+        os.environ["AGENTS_REPORT_LANG"] = args.lang
+    # Re-init i18n after lang is set
+    set_lang(os.environ.get("AGENTS_REPORT_LANG", "zh"))
 
     report_url = os.environ.get("AGENTS_REPORT_URL", "").strip()
     if report_url:

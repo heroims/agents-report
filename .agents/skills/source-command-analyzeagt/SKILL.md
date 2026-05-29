@@ -12,11 +12,18 @@ description: 读取 reports/ 中的历史报告，生成团队汇总报告，支
 直接调用脚本：
 
 ```bash
-python3 scripts/analyze.py                        # 周报（默认）
+python3 scripts/analyze.py                        # 周报（默认，中文）
 python3 scripts/analyze.py --period monthly       # 月报
 python3 scripts/analyze.py --period quarterly     # 季报
 python3 scripts/analyze.py --period annual        # 年报
+python3 scripts/analyze.py --lang en              # 英文周报
+python3 scripts/analyze.py --period monthly --lang en  # 英文月报
 ```
+
+**语言选择**：
+- 默认根据 `AGENTS_REPORT_LANG` 环境变量（`zh`/`en`），未设置时默认中文
+- 通过 `--lang zh|en` 显式指定
+- 代理调用时：根据用户提问语言自动传递 `--lang` 参数（中文提问 → `--lang zh`，英文提问 → `--lang en`）
 
 ## 自动流程
 
@@ -35,5 +42,5 @@ python3 scripts/analyze.py --period annual        # 年报
 也可通过 Dashboard 端点触发服务端分析：
 
 ```bash
-curl -X POST 'http://localhost:8880/api/analyze?period_type=weekly'
+curl -X POST 'http://localhost:8880/api/analyze?period_type=weekly&lang=zh'
 ```
