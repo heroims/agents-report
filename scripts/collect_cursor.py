@@ -33,6 +33,10 @@ _scripts_dir = str((__import__('pathlib').Path(__file__).resolve().parent))
 if _scripts_dir not in _sys.path:
     _sys.path.insert(0, _scripts_dir)
 from period_utils import period_start_end
+from i18n import T as _I18nT
+_LANG = _I18nT.detect()
+_I18N = _I18nT(_LANG)
+_t = _I18N
 
 
 def _cursor_state_db():
@@ -605,14 +609,14 @@ def generate_html(report, out_path):
     </div>
 
     <div class="stats-row">
-      <div class="stat"><div class="stat-value">{s['total_sessions']}</div><div class="stat-label">会话数</div></div>
-      <div class="stat"><div class="stat-value">{s['total_messages']}</div><div class="stat-label">消息数</div></div>
-      <div class="stat"><div class="stat-value">+{s['total_lines_added']}/-{s['total_lines_removed']}</div><div class="stat-label">代码行</div></div>
-      <div class="stat"><div class="stat-value">{s['total_files']}</div><div class="stat-label">改动文件</div></div>
-      <div class="stat"><div class="stat-value">{s['active_days']}</div><div class="stat-label">活跃天数</div></div>
+      <div class="stat"><div class="stat-value">{s['total_sessions']}</div><div class="stat-label">' + _t("Sessions") + '</div></div>
+      <div class="stat"><div class="stat-value">{s['total_messages']}</div><div class="stat-label">' + _t("Messages") + '</div></div>
+      <div class="stat"><div class="stat-value">+{s['total_lines_added']}/-{s['total_lines_removed']}</div><div class="stat-label">' + _t("Code Lines") + '</div></div>
+      <div class="stat"><div class="stat-value">{s['total_files']}</div><div class="stat-label">' + _t("Files Changed") + '</div></div>
+      <div class="stat"><div class="stat-value">{s['active_days']}</div><div class="stat-label">' + _t("Active Days") + '</div></div>
       <div class="stat"><div class="stat-value">{s['agent_count']}</div><div class="stat-label">Agent</div></div>
       <div class="stat"><div class="stat-value">{s['chat_count']}</div><div class="stat-label">Chat</div></div>
-      <div class="stat"><div class="stat-value">{s['ai_hashes_count']}</div><div class="stat-label">AI 代码块</div></div>
+      <div class="stat"><div class="stat-value">{s['ai_hashes_count']}</div><div class="stat-label">' + _t("AI Code Blocks") + '</div></div>
     </div>
 
     <h2>What You Work On</h2>
@@ -658,7 +662,7 @@ def generate_html(report, out_path):
     # Daily charts
     if s["daily"]:
         max_daily = max(item["sessions"] for item in s["daily"]) or 1
-        html_parts.append("""    <h2>每日会话数</h2>
+        html_parts.append("""    <h2>{_t("Daily Sessions")}</h2>
     <div class="chart-card">
 """)
         html_parts.append(_render_bar_rows(s["daily"], "day", "sessions", max_daily))
@@ -667,9 +671,9 @@ def generate_html(report, out_path):
     # Mode distribution
     html_parts.append(f"""    <h2>使用模式</h2>
     <div class="stats-row" style="margin-top: 16px;">
-      <div class="stat"><div class="stat-value">{s['agent_count']}</div><div class="stat-label">Agent 模式</div></div>
-      <div class="stat"><div class="stat-value">{s['chat_count']}</div><div class="stat-label">Chat 模式</div></div>
-      <div class="stat"><div class="stat-value">{s['plan_count']}</div><div class="stat-label">Plan 模式</div></div>
+      <div class="stat"><div class="stat-value">{s['agent_count']}</div><div class="stat-label">' + _t("Agent Mode") + '</div></div>
+      <div class="stat"><div class="stat-value">{s['chat_count']}</div><div class="stat-label">' + _t("Chat Mode") + '</div></div>
+      <div class="stat"><div class="stat-value">{s['plan_count']}</div><div class="stat-label">' + _t("Plan Mode") + '</div></div>
       <div class="stat"><div class="stat-value">{s['avg_messages']}</div><div class="stat-label">Avg msgs/session</div></div>
     </div>
 """)
@@ -716,7 +720,7 @@ def generate_html(report, out_path):
 """
             )
     else:
-        html_parts.append('      <div class="card"><div class="card-title">数据不足</div><div class="card-detail">本周 Cursor 使用量偏少，暂时不足以提炼稳定优势。</div></div>\n')
+        html_parts.append('      <div class="card"><div class="card-title">' + _t("Data insufficient") + '</div><div class="card-detail">本周 Cursor 使用量偏少，暂时不足以提炼稳定优势。</div></div>\n')
     html_parts.append("    </div>\n")
 
     # Friction
@@ -733,7 +737,7 @@ def generate_html(report, out_path):
 """
             )
     else:
-        html_parts.append('      <div class="card"><div class="card-title">摩擦不明显</div><div class="card-detail">本周没有解析到显著的中断或效率下滑问题。</div></div>\n')
+        html_parts.append('      <div class="card"><div class="card-title">' + _t("No significant friction") + '</div><div class="card-detail">本周没有解析到显著的中断或效率下滑问题。</div></div>\n')
     html_parts.append("    </div>\n")
 
     # Features

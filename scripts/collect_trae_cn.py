@@ -29,6 +29,10 @@ _scripts_dir = str((__import__('pathlib').Path(__file__).resolve().parent))
 if _scripts_dir not in _sys.path:
     _sys.path.insert(0, _scripts_dir)
 from period_utils import period_start_end
+from i18n import T as _I18nT
+_LANG = _I18nT.detect()
+_I18N = _I18nT(_LANG)
+_t = _I18N
 
 
 def _trae_cn_workspace_storage():
@@ -192,7 +196,7 @@ def build_insights(sessions):
             f"Trae CN 本周共 {total_sessions} 个会话，分布在 {project_count} 个项目上，"
             f"以 {dominant_mode} 使用模式为主（{agent_count} 次 Builder / {chat_count} 次 Chat）。"
             if total_sessions
-            else "本周暂无 Trae CN 使用数据。"
+            else _t("No Trae CN usage data this period.")
         ),
         "hindering": (
             "Trae CN 当前不记录会话时间戳，无法精确按周过滤，所有已存在会话都会被纳入统计。"
@@ -230,7 +234,7 @@ def build_insights(sessions):
             f"{'交互密度较高，说明你会在 Trae CN 中做多轮迭代。' if avg_messages >= 3 else '会话偏轻量，更像快速查询而非深度协作。'}"
         )
     else:
-        narrative_parts.append("本周暂无 Trae CN 使用数据。")
+        narrative_parts.append(_t("No Trae CN usage data this period."))
 
     key_insight = (
         f"Trae CN 目前更接近{'一个自主代理执行入口' if agent_count >= chat_count else '一个辅助问答工具'}，"
@@ -244,25 +248,25 @@ def build_insights(sessions):
     if total_sessions:
         usage_cards = [
             {
-                "title": "会话密度",
+                "title": _t("Session Density"),
                 "value": f"{avg_messages} msgs/session",
                 "desc": f"平均每会话约 {avg_messages} 条消息，"
                        f"{'多轮交互说明你在深度使用 Trae CN。' if avg_messages >= 3 else '会话偏单向查询，可以考虑增加迭代深度。'}",
             },
             {
-                "title": "Builder 采纳率",
+                "title": _t("Builder Adoption Rate"),
                 "value": f"{builder_ratio}%",
                 "desc": f"{total_sessions} 次会话中 {agent_count} 次使用 Builder 模式。"
                        f"{'Builder 已经成为默认选择。' if builder_ratio >= 50 else 'Chat 仍占主导，尝试更多 Builder 会话可获得更强自主执行能力。'}",
             },
             {
-                "title": "项目覆盖",
+                "title": _t("Project Coverage"),
                 "value": f"{project_count} 个项目",
                 "desc": f"覆盖 {project_count} 个不同工作区，"
                        f"{'使用场景较广。' if project_count >= 3 else '集中在少数项目中，可以尝试在新项目中也使用 Trae CN。'}",
             },
             {
-                "title": "工作流集中度",
+                "title": _t("Workflow Concentration"),
                 "value": f"{concentration}%",
                 "desc": f"最活跃项目（{top_area['cwd'] if top_area else '无'}）占 {concentration}% 的会话，"
                        f"{'说明你已经找到适合 Trae CN 的场景。' if concentration >= 50 else '使用比较分散。'}",
@@ -274,17 +278,17 @@ def build_insights(sessions):
     if total_sessions:
         if agent_count > 0:
             wins.append({
-                "title": "Builder 模式已进入常态化使用",
+                "title": _t("Builder mode has entered regular use"),
                 "detail": f"{agent_count} 次 Builder 会话说明你已经开始将 Trae CN 作为自主代理使用，不仅仅是问答工具。",
             })
         if project_count >= 3:
             wins.append({
-                "title": "Trae CN 覆盖多个项目场景",
+                "title": _t("Covering multiple project scenarios"),
                 "detail": f"从 {areas[0]['cwd']} 到 {areas[-1]['cwd']}，Trae CN 已经在 {project_count} 个项目中发挥作用。",
             })
         if total_sessions >= 5:
             wins.append({
-                "title": "使用频率已形成习惯",
+                "title": _t("Usage frequency established"),
                 "detail": f"{total_sessions} 个会话说明 Trae CN 已经成为你工具箱中的固定成员，不是偶尔尝试。",
             })
 
@@ -292,17 +296,17 @@ def build_insights(sessions):
     friction = []
     if total_sessions:
         friction.append({
-            "title": "数据可观测性有限",
+            "title": _t("Limited data observability"),
             "detail": "Trae CN 不记录时间戳、Token 用量和文件改动轨迹，无法像 Claude/Codex 那样做执行质量分析。",
         })
         if avg_messages < 2:
             friction.append({
-                "title": "会话深度偏浅",
+                "title": _t("Session depth is shallow"),
                 "detail": f"平均仅 {avg_messages} 条消息/会话，可能说明大部分会话停留在单轮问答，没有形成深度协作。",
             })
         if chat_count > agent_count and total_sessions >= 3:
             friction.append({
-                "title": "Chat 模式仍占主导",
+                "title": _t("Chat mode still dominates"),
                 "detail": f"{chat_count} 次 Chat vs {agent_count} 次 Builder，Builder 的自主执行能力还没有完全发挥。",
             })
 
@@ -310,15 +314,15 @@ def build_insights(sessions):
     features = []
     if total_sessions:
         features.append({
-            "title": "把稳定任务固化到 Builder",
+            "title": _t("Solidify stable tasks into Builder"),
             "detail": "对于已经重复验证过的任务流程，直接写成 Builder 指令模板，减少每次重新描述的成本。",
         })
         features.append({
-            "title": "明确任务验收标准",
+            "title": _t("Clarify task acceptance criteria"),
             "detail": "在 Builder 会话的第一个 Prompt 里就把预期输出形式说死（文件、报告、修复清单），减少中途返工。",
         })
         features.append({
-            "title": "扩展使用场景",
+            "title": _t("Expand usage scenarios"),
             "detail": "把 Trae CN 从当前高频项目延伸到其他项目，看看在不同技术栈和项目结构下 Builder 的表现差异。",
         })
 
@@ -326,7 +330,7 @@ def build_insights(sessions):
     patterns = []
     if total_sessions:
         patterns.append({
-            "title": f"Trae CN 在{'自主执行' if agent_count >= chat_count else '辅助问答'}角色上已经稳定",
+            "title": f"{_t("Trae CN is stable in its")} {'autonomous execution' if agent_count >= chat_count else 'assistant Q&A'} {_t("role")}",
             "summary": f"Builder 占比 {builder_ratio}%，会话分布在 {project_count} 个项目上，使用模式趋于固定。",
         })
         patterns.append({
@@ -338,11 +342,11 @@ def build_insights(sessions):
     horizon = []
     if total_sessions:
         horizon.append({
-            "title": "从激活频率走向执行质量",
+            "title": _t("From activation frequency to execution quality"),
             "detail": "一旦补上时间戳、Token 和改动追踪，Trae CN 的周报就能从「用了多少」升级成「做成了什么」。",
         })
         horizon.append({
-            "title": "形成多工具分工",
+            "title": _t("Form multi-tool division of labor"),
             "detail": "当 Claude、Codex、OpenCode、Cursor、Trae、Trae CN 的数据都充足后，可以开始分析谁负责探索、谁负责执行、谁负责批处理。",
         })
 
@@ -409,7 +413,7 @@ def generate_report(week, period_start, period_end, sessions):
 
     def _render_cards(items):
         if not items:
-            return '      <div class="card"><div class="card-title">样本不足</div><div class="card-detail">本周数据还不足以稳定提炼这一部分内容。</div></div>\n'
+            return '      <div class="card"><div class="card-title">' + _t("Sample insufficient") + '</div><div class="card-detail">本周数据还不足以稳定提炼这一部分内容。</div></div>\n'
         parts = []
         for item in items:
             detail = item.get("detail") or item.get("summary") or item.get("desc") or ""
@@ -504,10 +508,10 @@ def generate_report(week, period_start, period_end, sessions):
     </div>
 
     <div class="stats-row">
-      <div class="stat"><div class="stat-value">{total_sessions}</div><div class="stat-label">会话数</div></div>
-      <div class="stat"><div class="stat-value">{total_messages}</div><div class="stat-label">消息数</div></div>
-      <div class="stat"><div class="stat-value">{builder_ratio}%</div><div class="stat-label">Builder 占比</div></div>
-      <div class="stat"><div class="stat-value">{len(areas)}</div><div class="stat-label">活跃项目</div></div>
+      <div class="stat"><div class="stat-value">{total_sessions}</div><div class="stat-label">' + _t("Sessions") + '</div></div>
+      <div class="stat"><div class="stat-value">{total_messages}</div><div class="stat-label">' + _t("Messages") + '</div></div>
+      <div class="stat"><div class="stat-value">{builder_ratio}%</div><div class="stat-label">' + _t("Builder Ratio") + '</div></div>
+      <div class="stat"><div class="stat-value">{len(areas)}</div><div class="stat-label">' + _t("Active Projects") + '</div></div>
       <div class="stat"><div class="stat-value">{agent_count}/{chat_count}</div><div class="stat-label">Builder/Chat</div></div>
     </div>
 

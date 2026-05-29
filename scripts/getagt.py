@@ -17,6 +17,7 @@ _scripts_dir = str((__import__('pathlib').Path(__file__).resolve().parent))
 if _scripts_dir not in _sys.path:
     _sys.path.insert(0, _scripts_dir)
 from period_utils import current_period, period_label as plabel, period_type_arg
+from i18n import T as _EnvT, _ZH_MAP as _ENV_MAP
 
 
 
@@ -306,6 +307,10 @@ def collect_environment():
 
 
 def _build_environment_block(environment):
+    _env_lang = os.environ.get("AGENTS_REPORT_LANG", "zh")
+    _env_i18n = _EnvT(_env_lang)
+    env_title = _env_i18n("Local Environment") if _env_lang == "en" else "本机环境"
+    net_subtitle = _env_i18n("Network") if _env_lang == "en" else "网络"
     jdk = environment.get("jdk") or environment
     network = environment.get("network") or {}
     installed = jdk.get("installed") or []
@@ -360,7 +365,7 @@ def _build_environment_block(environment):
     )
     network_section = ""
     if network_items:
-        network_section = f"""  <div class="env-subtitle">网络</div>
+        network_section = f"""  <div class="env-subtitle">{net_subtitle}</div>
 {ip_items_html}"""
 
     raw = json.dumps(environment, ensure_ascii=False)
@@ -377,7 +382,7 @@ def _build_environment_block(environment):
 @media (max-width: 760px) {{ .env-row {{ flex-direction: column; gap: 2px; }} .env-source {{ white-space: normal; }} }}
 </style>
 <section class="env-section">
-  <div class="env-title">本机环境</div>
+  <div class="env-title">{env_title}</div>
 {jdk_section}
 {network_section}
 </section>

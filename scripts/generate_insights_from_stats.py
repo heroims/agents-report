@@ -1012,10 +1012,10 @@ def build_rich_insights(session_meta_records, facets_by_session, ws):
     ranked_work = sorted(work_metrics.items(), key=lambda item: (item[1]["sessions"], item[1]["tokens"]), reverse=True)
     work_on = []
     for _, metric in ranked_work[:5]:
-        work_style = "高密度执行流" if metric["sessions"] >= 3 else "点状任务流"
-        delivery_shape = "改动与验证并行" if metric["messages"] >= 10 else "以阅读和确认为主"
-        top_languages = "、".join(name for name, _ in metric["languages"].most_common(3)) or "混合栈"
-        top_tools = "、".join(name for name, _ in metric["tools"].most_common(3)) or "对话"
+        work_style = _t("High-density execution flow") if metric["sessions"] >= 3 else _t("Sporadic task flow")
+        delivery_shape = _t("Change and verify in parallel") if metric["messages"] >= 10 else _t("Read and confirm primarily")
+        top_languages = "、".join(name for name, _ in metric["languages"].most_common(3)) or _t("Mixed stack")
+        top_tools = "、".join(name for name, _ in metric["tools"].most_common(3)) or _t("Dialogue")
         work_on.append({
             "name": metric["name"],
             "sessions": metric["sessions"],

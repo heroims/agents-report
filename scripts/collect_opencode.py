@@ -18,6 +18,13 @@ _scripts_dir = str((__import__('pathlib').Path(__file__).resolve().parent))
 if _scripts_dir not in _sys.path:
     _sys.path.insert(0, _scripts_dir)
 from period_utils import period_start_end
+from i18n import T as _I18nT
+_LANG = _I18nT.detect()
+_I18N = _I18nT(_LANG)
+_t = _I18N
+from i18n import T as _I18nT
+_LANG = _I18nT.detect()
+_I18N = _I18nT(_LANG)
 
 
 # parse_week replaced by period_start_end from period_utils
@@ -368,7 +375,7 @@ def build_insights(data):
         "working": (
             f"OpenCode 这周已经不是偶尔点开用一下的状态了。{total_sessions} 个会话分布在 {active_days} 个活跃日上，平均每天 {msgs_per_day} 条消息，说明它已经进入你的日常执行链路。"
             if total_sessions
-            else "这周 OpenCode 几乎没有形成稳定使用。"
+            else _t("OpenCode has almost no stable usage this period.")
         ),
         "hindering": (
             f"当前最大的短板不是缺会话，而是可观测性偏弱。现有数据能看到会话、消息和 token，但还看不到像补丁结果、工具链路那样更细的执行痕迹，所以一些行为只能做保守判断。"
@@ -392,22 +399,22 @@ def build_insights(data):
 
     usage_cards = [
         {
-            "title": "使用密度",
+            "title": _t("Usage Density"),
             "value": f"{avg_messages} msgs/session",
             "desc": f"平均每会话约 {avg_messages} 条消息，说明不少会话都包含来回追问和逐步收敛。",
         },
         {
-            "title": "上下文深度",
+            "title": _t("Context Depth"),
             "value": format_tokens(avg_tokens),
             "desc": f"平均每会话约 {format_tokens(avg_tokens)} tokens，OpenCode 在部分任务里已经承担了有上下文负载的工作。",
         },
         {
-            "title": "日均节奏",
+            "title": _t("Daily Rhythm"),
             "value": f"{msgs_per_day} msgs/day",
             "desc": f"活跃日平均约 {msgs_per_day} 条消息、{format_tokens(tokens_per_day)} tokens，整体更像集中使用而不是长尾触发。",
         },
         {
-            "title": "工作流集中度",
+            "title": _t("Workflow Concentration"),
             "value": f"{concentration}%",
             "desc": "会话更多集中在少数几条工作流上，说明你已经有初步适配场景，但还没完全铺开。",
         },
@@ -415,71 +422,71 @@ def build_insights(data):
 
     wins = [
         {
-            "title": "已经形成稳定周节奏",
+            "title": _t("Stable weekly rhythm formed"),
             "detail": f"{active_days} 个活跃日和 {total_sessions} 个会话说明 OpenCode 已经不是偶发尝试，而是进入了你本周的固定工具箱。",
         },
         {
-            "title": "上下文承载能力开始被真正使用",
+            "title": _t("Context capacity being genuinely utilized"),
             "detail": f"总 token 达到 {format_tokens(total_tokens)}，平均每会话 {format_tokens(avg_tokens)}，说明你不是只拿它处理轻量问题。",
         },
         {
-            "title": "高频工作流已经出现雏形",
+            "title": _t("High-frequency workflows taking shape"),
             "detail": f"最集中的工作流占了约 {concentration}% 的会话，说明你已经在筛选哪些任务更适合交给 OpenCode。",
         },
     ]
 
     friction = [
         {
-            "title": "行为细节还不够可见",
+            "title": _t("Behavioral details not yet visible"),
             "detail": "和 Claude、Codex 相比，OpenCode 当前采集侧看不到足够细的工具和改动轨迹，所以能分析节奏，但还不能充分分析执行质量。",
         },
         {
-            "title": "任务分布仍偏集中",
+            "title": _t("Task distribution still concentrated"),
             "detail": "高频工作流占比高，说明 OpenCode 还主要服务于少数场景，暂时没有扩展成更通用的执行入口。",
         },
     ]
 
     features = [
         {
-            "title": "把高频场景写成固定提示模板",
+            "title": _t("Turn high-frequency scenarios into fixed templates"),
             "detail": "既然工作流已经开始集中，就值得把目标、边界和输出格式固化成模板，减少每次重新起手。",
         },
         {
-            "title": "让每次会话都带结果定义",
+            "title": _t("Make every session carry a result definition"),
             "detail": "如果目标是报告、摘要、修复建议或清单，第一轮就把最终输出形式说死，能显著减少中途改方向。",
         },
         {
-            "title": "补采更细的执行事件",
+            "title": _t("Collect finer execution events"),
             "detail": "后续把工具调用、命令轨迹、文件影响补上，才能让 OpenCode 洞察从活跃度报告升级成执行质量报告。",
         },
     ]
 
     patterns = [
         {
-            "title": "OpenCode 更像集中处理器，而不是全天候主力",
+            "title": _t("OpenCode is a batch processor not a workhorse"),
             "summary": "它本周的会话分布更像在特定时间段承接一批任务，而不是均匀分散在所有工作时间里。",
         },
         {
-            "title": "你已经找到适合它的任务轮廓，但还没有完全铺开",
+            "title": _t("Found task contours but not yet expanded"),
             "summary": "高集中度说明适配场景开始清晰，下一步是把这些场景标准化，而不是继续零散试探。",
         },
         {
-            "title": "当前瓶颈在观测，不在使用意愿",
+            "title": _t("Bottleneck is observability, not willingness"),
             "summary": "你已经在用，但现有数据还不足以像 Claude/Codex 那样看清楚它是怎么做事的。",
         },
     ]
 
     horizon = [
         {
-            "title": "从周活跃度走向周执行质量",
+            "title": _t("From weekly activity to weekly execution quality"),
             "detail": "一旦补上命令、工具和改动采集，OpenCode 可以从“本周用了多少”升级成“本周做成了什么、卡在了哪里”。",
         },
         {
-            "title": "把集中场景推成标准工作流",
+            "title": _t("Push concentrated scenarios into standard workflows"),
             "detail": "最适合 OpenCode 的那几类任务，下一步应该沉淀成固定模板或 SOP，让使用门槛继续下降。",
         },
         {
-            "title": "形成三工具之间的角色分工",
+            "title": _t("Form three-tool role division"),
             "detail": "当 Claude、Codex、OpenCode 都有足够洞察后，可以开始明确谁负责探索、谁负责落地、谁负责批处理，而不是混着用。",
         },
     ]
@@ -524,7 +531,7 @@ def generate_html(data, out_path):
         <div class="bar-value">{safe_text(str(value) + title_suffix)}</div>
       </div>"""
             )
-        return "\n".join(result) if result else '<p class="empty">本周暂无每日数据。</p>'
+        return "\n".join(result) if result else '<p class="empty">本周' + _t('N/A') + '每日数据。</p>'
 
     work_on_html = ""
     for item in insights["work_on"]:
@@ -537,7 +544,7 @@ def generate_html(data, out_path):
       </div>
 """
     if not work_on_html:
-        work_on_html = '      <p class="empty">本周暂无可用工作流样本。</p>\n'
+        work_on_html = '      <p class="empty">本周' + _I18N('N/A') + '可用工作流样本。</p>\n'
 
     usage_cards_html = ""
     for item in insights["usage_cards"]:
@@ -549,7 +556,7 @@ def generate_html(data, out_path):
 
     def render_cards(items):
         if not items:
-            return '      <div class="card"><div class="card-title">样本不足</div><div class="card-detail">本周数据还不足以稳定提炼这一部分内容。</div></div>\n'
+            return '      <div class="card"><div class="card-title">' + _t('Sample insufficient') + '</div><div class="card-detail">本周数据还不足以稳定提炼这一部分内容。</div></div>\n'
         html_parts = []
         for item in items:
             detail = item.get("detail") or item.get("summary") or item.get("desc") or ""

@@ -256,7 +256,7 @@ def api_ai_summary_stream():
 
     def generate():
         try:
-            for text in _call_ai_stream(prompt, {}, model=None, system_override=''):
+            for text in _call_ai_stream(prompt, {}, model=None, system_override='', lang=lang):
                 chunks.append(text)
                 yield f'data: {json.dumps(text, ensure_ascii=False)}\n\n'
         except Exception as e:
@@ -281,11 +281,11 @@ def api_ai_chat():
 
     def generate():
         try:
-            for chunk in _call_ai_stream(question, context, model=None):
+            for chunk in _call_ai_stream(question, context, model=None, lang=chat_lang):
                 # chunk is JSON-encoded; frontend must JSON.parse(e.data) to decode
                 yield f'data: {json.dumps(chunk, ensure_ascii=False)}\n\n'
         except Exception as e:
-            yield f'data: '+json.dumps(_t(lang, 'stream_error'), ensure_ascii=False)+'\n\n'
+            yield f'data: '+json.dumps(_t(chat_lang, 'stream_error'), ensure_ascii=False)+'\n\n'
 
     return Response(
         generate(),
@@ -405,7 +405,7 @@ def _call_ai(prompt: str, model: str = None) -> str:
         return resp.choices[0].message.content or ''
 
 
-def _call_ai_stream(question: str, context: dict, model: str = None, system_override: str | None = None):
+def _call_ai_stream(question: str, context: dict, model: str = None, system_override: str | None = None, lang: str = "zh"):
     provider = AI_PROVIDER
     if system_override is not None:
         system = system_override
@@ -413,12 +413,12 @@ def _call_ai_stream(question: str, context: dict, model: str = None, system_over
         totals = context.get('totals', {})
         members = context.get('members', [])[:20]
         members_text = '; '.join(
-            f"{m.get('display', '?')}: {m.get('messages', 0)}{_t(chat_lang, 'msg_unit')}"
+            f"{m.get('display', '?')}: {m.get('messages', 0)}{_t(lang, 'msg_unit')}"
             if m.get('reported')
-            else f"{m.get('display', '?')}: {_t(chat_lang, 'not_submitted')}"
+            else f"{m.get('display', '?')}: {_t(lang, 'not_submitted')}"
             for m in members
         )
-        system = _t(chat_lang, 'chat_system',
+        system = _t(lang, 'chat_system',
             week=context.get('week', ''),
             msgs=totals.get('messages', 0),
             pct=totals.get('coverage_pct', 0),

@@ -135,13 +135,13 @@ def main(week, week_start, week_end):
     top_tool = tools.most_common(1)[0][0] if tools else "various tools"
     at_a_glance = f"""
         <div class="glance-section">
-          <strong>工作重心：</strong>本週 {active_days} 個工作日完成 {total_sessions} 個 sessions，主要集中在 {top_proj} 上，平均每天 {msgs_per_day} 條訊息。
+          <strong>' + _t('Work Focus') + '：</strong>本週 {active_days} 個工作日完成 {total_sessions} 個 sessions，主要集中在 {top_proj} 上，平均每天 {msgs_per_day} 條訊息。
         </div>
         <div class="glance-section">
-          <strong>工具使用：</strong>最常用工具為 {top_tool}（{tools[top_tool]} 次），程式碼變更 +{lines_added:,} / -{lines_removed:,} 行。
+          <strong>' + _t('Tool Usage') + '：</strong>最常用工具為 {top_tool}（{tools[top_tool]} 次），程式碼變更 +{lines_added:,} / -{lines_removed:,} 行。
         </div>
         <div class="glance-section">
-          <strong>工作節奏：</strong>平均 session 時長 {avg_duration} 分鐘，最長單次 {max_duration} 分鐘，整體呈現深度協作模式。
+          <strong>' + _t('Work Rhythm') + '：</strong>平均 session 時長 {avg_duration} 分鐘，最長單次 {max_duration} 分鐘，整體呈現深度協作模式。
         </div>
 """
 

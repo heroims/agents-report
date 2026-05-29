@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """解析团队 Claude Code Insights 报告，生成汇总分析页面（支持周/月/季/年对比）。"""
 
+import datetime
 import json
 import sys
 
@@ -743,7 +744,7 @@ def generate_team_report(reports_dir, output_dir, members_path, period=None):
 
     # 成员基线口径：
     # 1. 优先以 members.json 为团队名单
-    # 2. 再补充“本周实际提交但未配置”的成员，避免把历史偶发 slug 全算成本周缺报
+    # 2. 再补充“本周实际提交但未配置”的成员，避免把历史偶发 slug 全算成{_cn("本周缺报")}
     configured_names = set(members.keys())
     all_names = set(configured_names) if configured_names else set()
     all_names.update(latest_data.keys())
@@ -937,9 +938,15 @@ def generate_team_report(reports_dir, output_dir, members_path, period=None):
     # Post-process language translation
     if _LANG == "en":
         from i18n import _ZH_MAP
-        _en_map = {v: k for k, v in _ZH_MAP.items() if len(v) > 1}
+        # Build ZH→EN map from both directions (same pattern as merge_reports.py)
+        _en_map = {}
+        for _zk, _zv in _ZH_MAP.items():
+            if len(_zv) >= 3 and any('\u4e00' <= c <= '\u9fff' for c in _zv):
+                _en_map[_zv] = _zk
+            if len(_zk) >= 3 and any('\u4e00' <= c <= '\u9fff' for c in _zk):
+                _en_map[_zk] = _zv
         # Also add reverse CN_MAP
-        _en_map.update({v: k for k, v in _CN_MAP.items() if len(v) > 1})
+        _en_map.update({v: k for k, v in _CN_MAP.items() if len(v) >= 3 and any('\u4e00' <= c <= '\u9fff' for c in v)})
         with open(output_path, "r", encoding="utf-8") as rf:
             translated = rf.read()
         for zh_phrase, en_phrase in sorted(_en_map.items(), key=lambda x: -len(x[0])):
@@ -989,7 +996,7 @@ def generate_team_report(reports_dir, output_dir, members_path, period=None):
     print(f"           Hermes {cur['hermes_sessions']:,} 会话 / {cur['hermes_tokens']:,} tokens / {cur['hermes_tool_calls']:,} 工具调用")
     print(f"累计消息: {cum['messages']:,} ({cum['member_count']} 人)")
     if totals["missing_members"]:
-        print(f"本周缺报: {len(totals['missing_members'])} 人 -> " + ", ".join(totals["missing_members"]))
+        print(f"{_cn("本周缺报")}: {len(totals['missing_members'])} 人 -> " + ", ".join(totals["missing_members"]))
     for group in all_groups:
         group_members = [d for d in team_data if d.get("group") == group]
         if not group_members:
@@ -1735,6 +1742,45 @@ _CN_MAP = {
     "New Ways to Use Claude Code": "使用 Claude Code 的新方法",
     "On the Horizon": "地平线上",
     "Team Feedback": "团队反馈",
+    # ── generate_html i18n ──
+        "Messages": "消息",
+    "Code Lines": "代码行",
+    "Files": "文件",
+    "Active Days": "活跃天",
+            "Avg Msgs/Day": "日均消息",
+    "CLI Sessions(CX+OC)": "CLI 会话(CX+OC)",
+    "Report": "报告",
+    "Missing this period": "本周缺报",
+    "Core Judgment": "核心判断",
+    "Team Stratification": "团队分层",
+    "Current Risks": "当前风险",
+    "Next Steps": "下一步",
+    "Tool Portrait": "工具画像",
+    " people": "人",
+        "Top Tools": "高频工具",
+    "Top Languages": "高频语言",
+    "Work Areas": "工作领域",
+    "Top Commands": "高频命令",
+    "Top Projects": "高频项目",
+    "Active Projects": "活跃项目",
+    "Common Highlights": "常见亮点",
+    "Common Friction Points": "常见摩擦点",
+    "Top Suggestions": "高频建议",
+    "Members": "成员",
+    "Member Details": "成员详情",
+    "vs": "对比",
+        "N/A": "暂无",
+    "Active Dirs": "活跃目录",
+    "Model Distribution": "模型分布",
+    "Active Agents": "活跃 Agent",
+    "Trigger Sources": "触发来源",
+    "Codex Members": "Codex 成员",
+    "Main Projects": "主要项目",
+    "Generated on": "生成于",
+    "Team Report": "团队报告",
+    "Missing (last:": "缺报（上次:",
+    "No history": "无历史",
+    "View full report": "查看完整报告",
 }
 
 
@@ -1766,12 +1812,23 @@ def _subtitle_to_cn(subtitle):
 
 
 def _build_cn_narrative(d):
-    top_tools = "、".join(_cn(t["label"]) for t in d.get("tools", [])[:3]) if d.get("tools") else "暂无"
-    top_langs = "、".join(_cn(l["label"]) for l in d.get("languages", [])[:3]) if d.get("languages") else "暂无"
+    if _LANG == "zh":
+        top_tools = "、".join(_cn(t["label"]) for t in d.get("tools", [])[:3]) if d.get("tools") else "暂无"
+        top_langs = "、".join(_cn(l["label"]) for l in d.get("languages", [])[:3]) if d.get("languages") else "暂无"
+        return (
+            f"本周期消息 {d.get('messages', 0)} 条，活跃 {d.get('days', 0)} 天，"
+            f"处理文件 {d.get('files', 0)} 个，日均 {d.get('msgs_day', 0)}。"
+            f"主要工具：{top_tools}；主要语言：{top_langs}。"
+        )
+    top_tools = ", ".join(t["label"] for t in d.get("tools", [])[:3]) if d.get("tools") else "N/A"
+    top_langs = ", ".join(l["label"] for l in d.get("languages", [])[:3]) if d.get("languages") else "N/A"
     return (
-        f"本周期消息 {d.get('messages', 0)} 条，活跃 {d.get('days', 0)} 天，"
-        f"处理文件 {d.get('files', 0)} 个，日均 {d.get('msgs_day', 0)}。"
-        f"主要工具：{top_tools}；主要语言：{top_langs}。"
+        f"Messages this period: {d.get('messages', 0)}, "
+        f"active {d.get('days', 0)} days, "
+        f"{d.get('files', 0)} files handled, "
+        f"avg {d.get('msgs_day', 0)}/day. "
+        f"Top tools: {top_tools}; "
+        f"Top languages: {top_langs}."
     )
 
 
@@ -1791,7 +1848,9 @@ def _area_desc_cn(area_name, raw_desc):
 
 
 def _localize_text(text):
-    """对可识别的英文短语做中文替换，保留无法准确翻译的原文。"""
+    """对可识别的英文短语做中文替换（仅 zh 模式），保留无法准确翻译的原文。"""
+    if _LANG == "en":
+        return text
     pairs = [
         ("Key pattern:", "关键模式："),
         ("What's working:", "做得好的："),
@@ -1874,8 +1933,8 @@ def generate_html(team_data, totals):
 
             status_badge = ""
             if is_missing:
-                last_seen = d.get("last_seen_week") or "无历史"
-                status_badge = f'<span class="status-miss">缺报（上次: {last_seen}）</span>'
+                last_seen = d.get("last_seen_week") or _cn("No history")
+                status_badge = f'<span class="status-miss">{_cn("Missing (last:")}{last_seen})</span>'
 
             messages_val = f"{d['messages']:,}" if not is_missing else "—"
             code_val = f"+{d['lines_added']:,}/-{d['lines_removed']:,}" if not is_missing else "—"
@@ -1893,7 +1952,7 @@ def generate_html(team_data, totals):
             if rp and not is_missing:
                 report_link = (
                     f'<a class="report-icon" href="{_esc(rp)}" target="_blank" '
-                    f'title="查看完整报告" aria-label="查看 {_esc(d["display_name"])} 的完整报告">'
+                    f'title="{_cn("View full report")}" aria-label="{_cn("View full report")} ({_esc(d["display_name"])})">'
                     f'&#128279;</a>'
                 )
 
@@ -1914,13 +1973,13 @@ def generate_html(team_data, totals):
           <table class="member-table"{tid}>
             <thead>
               <tr>
-                <th style="text-align:left">成员</th>
-                <th class="sortable" data-col="1">消息<span class="sort-arrow"></span></th>
-                <th class="sortable" data-col="2">代码行<span class="sort-arrow"></span></th>
-                <th class="sortable" data-col="3">文件<span class="sort-arrow"></span></th>
-                <th class="sortable" data-col="4">活跃天<span class="sort-arrow"></span></th>
-                <th class="sortable" data-col="5">日均<span class="sort-arrow"></span></th>
-                <th>报告</th>
+                <th style="text-align:left">{_cn("Members")}</th>
+                <th class="sortable" data-col="1">{_cn("Messages")}<span class="sort-arrow"></span></th>
+                <th class="sortable" data-col="2">{_cn("Code Lines")}<span class="sort-arrow"></span></th>
+                <th class="sortable" data-col="3">{_cn("Files")}<span class="sort-arrow"></span></th>
+                <th class="sortable" data-col="4">{_cn("Active Days")}<span class="sort-arrow"></span></th>
+                <th class="sortable" data-col="5">{_cn("Avg/Day")}<span class="sort-arrow"></span></th>
+                <th>{_cn("报告")}</th>
               </tr>
             </thead>
             <tbody>{rows}</tbody>
@@ -1937,18 +1996,18 @@ def generate_html(team_data, totals):
         group_label = group.upper()
         group_count = f"{len(group_submitted)}/{len(group_members)}"
         group_tables_html += f'''
-    <h2><span class="group-tag">{_esc(group_label)}</span> 成员详情 <span style="font-size:14px;color:#64748b;font-weight:400">({group_count})</span></h2>
+    <h2><span class="group-tag">{_esc(group_label)}</span> {_cn("Member Details")} <span style="font-size:14px;color:#64748b;font-weight:400">({group_count})</span></h2>
     {_build_member_table(group_members, table_id=f"table-{group}")}'''
 
     member_table_html = group_tables_html
 
-    compare_html = f'<span class="week-tag" style="background:#f1f5f9;color:#64748b">对比 {prev_label}</span>' if prev_label else ""
-    coverage_html = f' · 覆盖率 {cur["member_count"]}/{cur["expected_count"]} ({cur["coverage_rate"]}%)' if cur["expected_count"] else ""
+    compare_html = f'<span class="week-tag" style="background:#f1f5f9;color:#64748b">{_cn("vs")} {prev_label}</span>' if prev_label else ""
+    coverage_html = f' · {_cn("Coverage")} {cur["member_count"]}/{cur["expected_count"]} ({cur["coverage_rate"]}%)' if cur["expected_count"] else ""
     missing_tip_html = ""
     if totals.get("missing_members"):
-        missing_tip_html = f'<div class="missing-tip">本周缺报 {len(totals["missing_members"])} 人：{_esc(", ".join(totals["missing_members"]))}</div>'
+        missing_tip_html = f'<div class="missing-tip">{_cn("本周缺报")} {len(totals["missing_members"])} {_cn(" people")}：{_esc(", ".join(totals["missing_members"]))}</div>'
 
-    def _pill_list(items, value_fmt=None, empty_text="暂无"):
+    def _pill_list(items, value_fmt=None, empty_text=_cn("N/A")):
         if not items:
             return f'<span class="pill-empty">{_esc(empty_text)}</span>'
         html = ""
@@ -1969,39 +2028,39 @@ def generate_html(team_data, totals):
     executive_html = f'''
     <div class="executive-panel">
       <div class="executive-card">
-        <div class="executive-title">核心判断</div>
+        <div class="executive-title">{_cn("核心判断")}</div>
         <div class="executive-text">{_esc(team_judgement["core"])}</div>
       </div>
       <div class="executive-card">
-        <div class="executive-title">团队分层</div>
+        <div class="executive-title">{_cn("团队分层")}</div>
         <div class="executive-text">{_esc(team_judgement["adoption"])}</div>
       </div>
       <div class="executive-card">
-        <div class="executive-title">当前风险</div>
+        <div class="executive-title">{_cn("当前风险")}</div>
         <div class="executive-text">{_esc(team_judgement["risk"])}</div>
       </div>
       <div class="executive-card">
-        <div class="executive-title">下一步</div>
+        <div class="executive-title">{_cn("下一步")}</div>
         <div class="executive-text">{_esc(team_judgement["next_action"])}</div>
       </div>
     </div>'''
 
     tool_insights_html = f'''
-    <h2>工具画像</h2>
+    <h2>{_cn("工具画像")}</h2>
     <div class="tool-grid">
       <div class="tool-card">
         <div class="tool-card-head">
           <span class="tool-name">Claude Code</span>
-          <span class="tool-stat">{claude_summary["users"]} 人</span>
+          <span class="tool-stat">{claude_summary["users"]} {_cn("人")}</span>
         </div>
         <p class="tool-summary">{_esc(claude_summary["summary"])}</p>
         <p class="tool-risk">{_esc(claude_summary["risks"])}</p>
         <p class="tool-action">{_esc(claude_summary["action"])}</p>
-        <div class="tool-subtitle">高频工具</div>
+        <div class="tool-subtitle">{_cn("高频工具")}</div>
         <div class="pill-row">{_pill_list(claude_summary["top_tools"])}</div>
-        <div class="tool-subtitle">高频语言</div>
+        <div class="tool-subtitle">{_cn("高频语言")}</div>
         <div class="pill-row">{_pill_list(claude_summary["top_languages"])}</div>
-        <div class="tool-subtitle">工作领域</div>
+        <div class="tool-subtitle">{_cn("工作领域")}</div>
         <div class="pill-row">{_pill_list(claude_summary["top_areas"])}</div>
         {f'<div class="quote-list">{patterns_html}</div>' if patterns_html else ''}
       </div>
@@ -2009,94 +2068,94 @@ def generate_html(team_data, totals):
       <div class="tool-card">
         <div class="tool-card-head">
           <span class="tool-name">Codex</span>
-          <span class="tool-stat">{codex_team["users"]} 人 / {cur["codex_sessions"]:,} 会话</span>
+          <span class="tool-stat">{codex_team["users"]} {_cn("人")} / {cur["codex_sessions"]:,} {_cn("会话")}</span>
         </div>
         <p class="tool-summary">{_esc(codex_team["summary"])}</p>
         <p class="tool-risk">{_esc(codex_team["risks"])}</p>
         <p class="tool-action">{_esc(codex_team["action"])}</p>
-        <div class="tool-subtitle">高频工具</div>
+        <div class="tool-subtitle">{_cn("高频工具")}</div>
         <div class="pill-row">{_pill_list(codex_summary["tools"])}</div>
-        <div class="tool-subtitle">高频命令</div>
+        <div class="tool-subtitle">{_cn("高频命令")}</div>
         <div class="pill-row">{_pill_list(codex_summary["commands"])}</div>
-        <div class="tool-subtitle">高频项目</div>
+        <div class="tool-subtitle">{_cn("高频项目")}</div>
         <div class="pill-row">{_pill_list(codex_summary["projects"])}</div>
       </div>
 
       <div class="tool-card">
         <div class="tool-card-head">
           <span class="tool-name">OpenCode</span>
-          <span class="tool-stat">{opencode_summary["users"]} 人 / {cur["opencode_sessions"]:,} 会话</span>
+          <span class="tool-stat">{opencode_summary["users"]} {_cn("人")} / {cur["opencode_sessions"]:,} {_cn("会话")}</span>
         </div>
         <p class="tool-summary">{_esc(opencode_summary["summary"])}</p>
         <p class="tool-risk">{_esc(opencode_summary["risks"])}</p>
         <p class="tool-action">{_esc(opencode_summary["action"])}</p>
-        <div class="tool-subtitle">活跃目录</div>
+        <div class="tool-subtitle">{_cn("Active Dirs")}</div>
         <div class="pill-row">{_pill_list(opencode_summary["top_areas"])}</div>
       </div>
 
       <div class="tool-card">
         <div class="tool-card-head">
           <span class="tool-name">Cursor</span>
-          <span class="tool-stat">{cursor_team["users"]} 人 / {cur["cursor_sessions"]:,} 会话</span>
+          <span class="tool-stat">{cursor_team["users"]} {_cn("人")} / {cur["cursor_sessions"]:,} {_cn("会话")}</span>
         </div>
         <p class="tool-summary">{_esc(cursor_team["summary"])}</p>
         <p class="tool-risk">{_esc(cursor_team["risks"])}</p>
         <p class="tool-action">{_esc(cursor_team["action"])}</p>
-        <div class="tool-subtitle">活跃项目</div>
+        <div class="tool-subtitle">{_cn("活跃项目")}</div>
         <div class="pill-row">{_pill_list(cursor_summary["top_areas"])}</div>
-        <div class="tool-subtitle">模型分布</div>
+        <div class="tool-subtitle">{_cn("Model Distribution")}</div>
         <div class="pill-row">{_pill_list(cursor_summary["top_models"])}</div>
       </div>
 
       <div class="tool-card">
         <div class="tool-card-head">
           <span class="tool-name">Trae</span>
-          <span class="tool-stat">{trae_team["users"]} 人 / {cur["trae_sessions"]:,} 会话</span>
+          <span class="tool-stat">{trae_team["users"]} {_cn("人")} / {cur["trae_sessions"]:,} {_cn("会话")}</span>
         </div>
         <p class="tool-summary">{_esc(trae_team["summary"])}</p>
         <p class="tool-risk">{_esc(trae_team["risks"])}</p>
         <p class="tool-action">{_esc(trae_team["action"])}</p>
-        <div class="tool-subtitle">活跃项目</div>
+        <div class="tool-subtitle">{_cn("活跃项目")}</div>
         <div class="pill-row">{_pill_list(trae_summary["top_areas"])}</div>
       </div>
 
       <div class="tool-card">
         <div class="tool-card-head">
           <span class="tool-name">Trae CN</span>
-          <span class="tool-stat">{trae_cn_team["users"]} 人 / {cur["trae_cn_sessions"]:,} 会话</span>
+          <span class="tool-stat">{trae_cn_team["users"]} {_cn("人")} / {cur["trae_cn_sessions"]:,} {_cn("会话")}</span>
         </div>
         <p class="tool-summary">{_esc(trae_cn_team["summary"])}</p>
         <p class="tool-risk">{_esc(trae_cn_team["risks"])}</p>
         <p class="tool-action">{_esc(trae_cn_team["action"])}</p>
-        <div class="tool-subtitle">活跃项目</div>
+        <div class="tool-subtitle">{_cn("活跃项目")}</div>
         <div class="pill-row">{_pill_list(trae_cn_summary["top_areas"])}</div>
       </div>
 
       <div class="tool-card">
         <div class="tool-card-head">
           <span class="tool-name">OpenClaw</span>
-          <span class="tool-stat">{openclaw_team["users"]} 人 / {cur["openclaw_sessions"]:,} 会话</span>
+          <span class="tool-stat">{openclaw_team["users"]} {_cn("人")} / {cur["openclaw_sessions"]:,} {_cn("会话")}</span>
         </div>
         <p class="tool-summary">{_esc(openclaw_team["summary"])}</p>
         <p class="tool-risk">{_esc(openclaw_team["risks"])}</p>
         <p class="tool-action">{_esc(openclaw_team["action"])}</p>
-        <div class="tool-subtitle">活跃 Agent</div>
+        <div class="tool-subtitle">{_cn("Active Agents")}</div>
         <div class="pill-row">{_pill_list(openclaw_summary["top_agents"])}</div>
-        <div class="tool-subtitle">触发来源</div>
+        <div class="tool-subtitle">{_cn("Trigger Sources")}</div>
         <div class="pill-row">{_pill_list(openclaw_summary["top_sources"])}</div>
       </div>
 
       <div class="tool-card">
         <div class="tool-card-head">
           <span class="tool-name">Hermes</span>
-          <span class="tool-stat">{hermes_team["users"]} 人 / {cur["hermes_sessions"]:,} 会话</span>
+          <span class="tool-stat">{hermes_team["users"]} {_cn("人")} / {cur["hermes_sessions"]:,} {_cn("会话")}</span>
         </div>
         <p class="tool-summary">{_esc(hermes_team["summary"])}</p>
         <p class="tool-risk">{_esc(hermes_team["risks"])}</p>
         <p class="tool-action">{_esc(hermes_team["action"])}</p>
-        <div class="tool-subtitle">高频工具</div>
+        <div class="tool-subtitle">{_cn("高频工具")}</div>
         <div class="pill-row">{_pill_list(hermes_summary["top_tools"])}</div>
-        <div class="tool-subtitle">模型分布</div>
+        <div class="tool-subtitle">{_cn("Model Distribution")}</div>
         <div class="pill-row">{_pill_list(hermes_summary["top_models"])}</div>
       </div>
     </div>'''
@@ -2120,27 +2179,27 @@ def generate_html(team_data, totals):
     <div class="codex-panel">
       <div class="codex-grid">
         <div class="codex-card">
-          <div class="codex-card-title">高频工具</div>
+          <div class="codex-card-title">{_cn("Top Tools")}</div>
           <div class="pill-row">{_pill_list(codex_summary["tools"])}</div>
         </div>
         <div class="codex-card">
-          <div class="codex-card-title">高频命令</div>
+          <div class="codex-card-title">{_cn("Top Commands")}</div>
           <div class="pill-row">{_pill_list(codex_summary["commands"])}</div>
         </div>
         <div class="codex-card">
-          <div class="codex-card-title">高频项目</div>
+          <div class="codex-card-title">{_cn("Top Projects")}</div>
           <div class="pill-row">{_pill_list(codex_summary["projects"])}</div>
         </div>
         <div class="codex-card">
-          <div class="codex-card-title">常见亮点</div>
+          <div class="codex-card-title">{_cn("Common Highlights")}</div>
           <div class="pill-row">{_pill_list(codex_summary["wins"])}</div>
         </div>
         <div class="codex-card">
-          <div class="codex-card-title">常见摩擦点</div>
+          <div class="codex-card-title">{_cn("Common Friction Points")}</div>
           <div class="pill-row">{_pill_list(codex_summary["frictions"])}</div>
         </div>
         <div class="codex-card">
-          <div class="codex-card-title">高频建议</div>
+          <div class="codex-card-title">{_cn("Top Suggestions")}</div>
           <div class="pill-row">{_pill_list(codex_summary["suggestions"])}</div>
         </div>
       </div>
@@ -2149,10 +2208,10 @@ def generate_html(team_data, totals):
         <table class="member-table">
           <thead>
             <tr>
-              <th style="text-align:left">Codex 成员</th>
-              <th>会话</th>
+              <th style="text-align:left">{_cn("Codex Members")}</th>
+              <th>{_cn("会话")}</th>
               <th>Tokens</th>
-              <th style="text-align:left">主要项目</th>
+              <th style="text-align:left">{_cn("Main Projects")}</th>
             </tr>
           </thead>
           <tbody>{codex_member_rows}</tbody>
@@ -2161,7 +2220,7 @@ def generate_html(team_data, totals):
     </div>'''
 
     return f'''<!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="{"zh-CN" if _LANG == "zh" else "en"}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -2262,41 +2321,41 @@ def generate_html(team_data, totals):
 </head>
 <body>
   <div class="container">
-    <h1>Claude Code Team Report</h1>
-    <p class="subtitle">{period_label_var} · {cur['member_count']} 名成员{coverage_html} {compare_html}</p>
-    <p style="font-size:13px;color:#94a3b8">生成于 {generated_at}</p>
+    <h1>{_cn("Team Report")}</h1>
+    <p class="subtitle">{period_label_var} · {cur['member_count']} {_cn("Members")}{coverage_html} {compare_html}</p>
+    <p style="font-size:13px;color:#94a3b8">{_cn("Generated on")} {generated_at}</p>
     {missing_tip_html}
     {executive_html}
 
     <div class="team-stats">
       <div class="ts">
         <div class="ts-val">{cur['member_count']}</div>
-        <div class="ts-label">成员</div>
+        <div class="ts-label">{_cn("成员")}</div>
         <div class="ts-delta"></div>
       </div>
       <div class="ts">
         <div class="ts-val">{cur['messages']:,}</div>
-        <div class="ts-label">消息</div>
+        <div class="ts-label">{_cn("消息")}</div>
         <div class="ts-delta">{_delta_badge(totals['delta_messages'])}</div>
       </div>
       <div class="ts">
         <div class="ts-val">+{cur['added']:,}</div>
-        <div class="ts-label">新增行</div>
+        <div class="ts-label">{_cn("新增行")}</div>
         <div class="ts-delta"></div>
       </div>
       <div class="ts">
         <div class="ts-val">{cur['files']:,}</div>
-        <div class="ts-label">文件</div>
+        <div class="ts-label">{_cn("文件")}</div>
         <div class="ts-delta">{_delta_badge(totals['delta_files'])}</div>
       </div>
       <div class="ts">
         <div class="ts-val">{cur['avg_msgs_day']}</div>
-        <div class="ts-label">日均消息</div>
+        <div class="ts-label">{_cn("日均消息")}</div>
         <div class="ts-delta">{_delta_badge(totals['delta_avg_msgs_day'])}</div>
       </div>
       <div class="ts">
         <div class="ts-val">{cur['codex_sessions'] + cur['opencode_sessions']}</div>
-        <div class="ts-label">CLI 会话(CX+OC)</div>
+        <div class="ts-label">{_cn("CLI 会话(CX+OC)")}</div>
         <div class="ts-delta"></div>
       </div>
       <div class="ts">
@@ -2312,7 +2371,7 @@ def generate_html(team_data, totals):
 
     {member_table_html}
 
-    <p style="margin-top:36px;font-size:12px;color:#94a3b8;text-align:center">Claude Code Team Report · {generated_at} · analyze.py</p>
+    <p style="margin-top:36px;font-size:12px;color:#94a3b8;text-align:center">_cn("Team Report") · {generated_at} · analyze.py</p>
   </div>
   <script>
     document.querySelectorAll(".member-table").forEach((table) => {{
@@ -2379,7 +2438,7 @@ if __name__ == "__main__":
     report_url = os.environ.get("AGENTS_REPORT_URL", "").strip()
     if report_url:
         # 不在本地生成，通知 Dashboard 执行服务端分析
-        target = f"{report_url.rstrip('/')}/api/analyze?period_type={args.period}"
+        target = f"{report_url.rstrip('/')}/api/analyze?period_type={args.period}&lang={os.environ.get('AGENTS_REPORT_LANG', 'zh')}"
         req = urllib.request.Request(target, method="POST")
         try:
             resp = urllib.request.urlopen(req, timeout=60)

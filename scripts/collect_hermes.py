@@ -17,6 +17,10 @@ _scripts_dir = str((__import__('pathlib').Path(__file__).resolve().parent))
 if _scripts_dir not in _sys.path:
     _sys.path.insert(0, _scripts_dir)
 from period_utils import period_start_end
+from i18n import T as _I18nT
+_LANG = _I18nT.detect()
+_I18N = _I18nT(_LANG)
+_t = _I18N
 
 HERMES_DB = Path.home() / ".hermes" / "state.db"
 
@@ -259,7 +263,7 @@ def build_insights(data):
             f"总 token 消耗 {_fmt(total_tokens)}，说明它已经进入你的日常工具箱。"
             f"主力模型 {top_model} 和 {tool_names} 是本周的高频操作。"
             if total_sessions
-            else "本周 Hermes 几乎无活动。"
+            else _t("No Hermes activity this period.")
         ),
         "hindering": (
             "当前 Hermes 数据能看到会话、消息、token 和工具调用，"
@@ -289,22 +293,22 @@ def build_insights(data):
 
     usage_cards = [
         {
-            "title": "会话密度",
+            "title": _t("Session Density"),
             "value": f"{sessions_per_day}/day",
             "desc": f"平均每天 {sessions_per_day} 个会话，Hermes 已经融入日常节奏。",
         },
         {
-            "title": "工具调用",
+            "title": _t("Tool Calls"),
             "value": str(tool_call_count),
             "desc": f"本周 {tool_call_count} 次工具调用，主要集中在 {tool_names}。",
         },
         {
-            "title": "上下文深度",
+            "title": _t("Context Depth"),
             "value": _fmt(avg_tokens),
             "desc": f"平均每会话约 {_fmt(avg_tokens)} tokens，说明你在 Hermes 上也承担了有上下文深度的任务。",
         },
         {
-            "title": "主力模型",
+            "title": _t("Primary Model"),
             "value": top_model,
             "desc": f"{top_model} 承担了最多的会话，是你本周的首选模型。",
         },
@@ -312,59 +316,59 @@ def build_insights(data):
 
     wins = [
         {
-            "title": "已经形成稳定的使用节奏",
+            "title": _t("Stable usage rhythm formed"),
             "detail": f"{active_days} 个活跃日、{total_sessions} 个会话，Hermes 不再是实验性工具，而是列入日常流程。",
         },
         {
-            "title": "工具调用密度说明它在做真实工作",
+            "title": _t("Tool call density shows real work"),
             "detail": f"{tool_call_count} 次工具调用说明 Hermes 不只是问答，而是在操作文件、执行命令、调用 API。",
         },
         {
-            "title": f"{top_model} 已经是你的稳定选择",
+            "title": f"{top_model} {_t("is already your stable choice")}",
             "detail": f"主力模型 {top_model} 说明你已经在 Hermes 上找到了合适的模型配置。",
         },
     ]
 
     friction = [
         {
-            "title": "执行质量数据还不够",
+            "title": _t("Execution quality data insufficient"),
             "detail": "目前能看到 token 和工具调用，但看不到文件改动、行数变化、补丁成功率，执行闭环的验证还缺一块。",
         },
         {
-            "title": "与其他工具的分工还不够清晰",
+            "title": _t("Tool division still unclear"),
             "detail": "当 Claude Code、Codex、OpenCode、Hermes 都在用的时候，需要更明确各自负责什么类型的任务。",
         },
     ]
 
     features = [
         {
-            "title": "把高频 Hermes 任务固化成固定工作流",
+            "title": _t("Solidify high-frequency Hermes tasks into workflows"),
             "detail": "既然工具调用已经集中在特定几个，就把这些任务的起点、边界和输出格式写进 SOUL.md 或 skills 中。",
         },
         {
-            "title": "策略性地分配模型",
+            "title": _t("Strategically allocate models"),
             "detail": f"对比 Hermes 的 {top_model} 和其他工具的模型选择，看是否有机会根据任务类型做更精细的模型分配。",
         },
     ]
 
     patterns = [
         {
-            "title": "Hermes 承担了工具密集型任务",
+            "title": _t("Hermes handles tool-intensive tasks"),
             "summary": f"从 {tool_call_count} 次工具调用和 {tool_names} 的分布看，你主要用它做需要多条命令和多个 API 交互的任务。",
         },
         {
-            "title": "你已经在构建多工具协同的工作方式",
+            "title": _t("Already building multi-tool collaboration"),
             "summary": "Claude Code、Codex、OpenCode、Hermes 各司其职，关键是让每个工具都拿到最适合它的任务。",
         },
     ]
 
     horizon = [
         {
-            "title": "补全执行质量指标",
+            "title": _t("Complete execution quality metrics"),
             "detail": "一旦能从 messages 中解析出文件改动和补丁结果，Hermes 报告就能从'用了多少'升级成'做成了多少'。",
         },
         {
-            "title": "形成四工具之间的明确分工",
+            "title": _t("Form four-tool clear division"),
             "detail": "Claude Code 重调研、Codex 重落地、OpenCode 重补位、Hermes 重编排 —— 这套分工成型后效率会有明显提升。",
         },
     ]
@@ -489,11 +493,11 @@ def generate_html(data, out_path):
     </div>
 
     <div class="stats-row">
-      <div class="stat"><div class="stat-value">{total_sessions}</div><div class="stat-label">会话数</div></div>
-      <div class="stat"><div class="stat-value">{total_messages}</div><div class="stat-label">消息数</div></div>
-      <div class="stat"><div class="stat-value">{_fmt(total_tokens)}</div><div class="stat-label">Token 用量</div></div>
-      <div class="stat"><div class="stat-value">{active_days}</div><div class="stat-label">活跃天数</div></div>
-      <div class="stat"><div class="stat-value">{tool_call_count}</div><div class="stat-label">工具调用</div></div>
+      <div class="stat"><div class="stat-value">{total_sessions}</div><div class="stat-label">' + _t("Sessions") + '</div></div>
+      <div class="stat"><div class="stat-value">{total_messages}</div><div class="stat-label">' + _t("Messages") + '</div></div>
+      <div class="stat"><div class="stat-value">{_fmt(total_tokens)}</div><div class="stat-label">' + _t("Token Usage") + '</div></div>
+      <div class="stat"><div class="stat-value">{active_days}</div><div class="stat-label">' + _t("Active Days") + '</div></div>
+      <div class="stat"><div class="stat-value">{tool_call_count}</div><div class="stat-label">' + _t("Tool Calls") + '</div></div>
     </div>
 
     <h2>How You Use Hermes</h2>
@@ -510,22 +514,22 @@ def generate_html(data, out_path):
 
     <div class="charts-row">
       <div class="chart-card">
-        <div class="chart-title">每日会话</div>
+        <div class="chart-title">' + _t("Daily Sessions") + '</div>
 {_render_bar_rows(daily, 'day', 'sessions', max_daily, 'x')}
       </div>
       <div class="chart-card">
-        <div class="chart-title">模型分布</div>
+        <div class="chart-title">' + _t("Model Distribution") + '</div>
 {_render_bar_rows(models, 'model', 'sessions', max_model, 'x')}
       </div>
     </div>
 
     <div class="charts-row">
       <div class="chart-card">
-        <div class="chart-title">高频工具</div>
+        <div class="chart-title">' + _t("Top Tools") + '</div>
 {_render_bar_rows(top_tools, 'name', 'count', max_tool, 'x')}
       </div>
       <div class="chart-card">
-        <div class="chart-title">Token 明细</div>
+        <div class="chart-title">' + _t("Token Detail") + '</div>
         <div class="bar-row"><div class="bar-label">Input</div><div class="bar-track"><div class="bar-fill" style="width:100%"></div></div><div class="bar-value">{_fmt(input_tokens)}</div></div>
         <div class="bar-row"><div class="bar-label">Output</div><div class="bar-track"><div class="bar-fill" style="width:{int(output_tokens / max(input_tokens, 1) * 100)}%"></div></div><div class="bar-value">{_fmt(output_tokens)}</div></div>
       </div>

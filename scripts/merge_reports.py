@@ -8,6 +8,9 @@ import re
 import sys
 from html import escape
 from i18n import T as _I18nT, _ZH_MAP
+_LANG = _I18nT.detect()
+_I18N = _I18nT(_LANG)
+_t = _I18N
 from pathlib import Path
 
 
@@ -112,7 +115,7 @@ def _path_label(path_value):
 
 def _render_pills(items, name_key="name", count_key="count", limit=8):
     if not items:
-        return '<span class="merge-empty">暂无</span>'
+        return '<span class="merge-empty">' + _t("N/A") + '</span>'
     pills = []
     for item in items[:limit]:
         name = escape(str(item.get(name_key, "")))
@@ -123,7 +126,7 @@ def _render_pills(items, name_key="name", count_key="count", limit=8):
 
 def _render_text_cards(items, limit=4):
     if not items:
-        return '<div class="merge-card"><div class="merge-card-title">暂无</div><div class="merge-card-text">本周没有足够样本生成该区块。</div></div>'
+        return f'<div class="merge-card"><div class="merge-card-title">{_t("N/A")}</div><div class="merge-card-text">{_t("Not enough samples to generate this block.")}</div></div>'
     cards = []
     for item in items[:limit]:
         title = escape(str(item.get("title", "")))
@@ -139,7 +142,7 @@ def _render_text_cards(items, limit=4):
 
 def _render_usage_cards(items, limit=4):
     if not items:
-        return '<div class="merge-card"><div class="merge-card-title">暂无</div><div class="merge-card-text">本周没有足够样本生成该区块。</div></div>'
+        return f'<div class="merge-card"><div class="merge-card-title">{_t("N/A")}</div><div class="merge-card-text">{_t("Not enough samples to generate this block.")}</div></div>'
     cards = []
     for item in items[:limit]:
         title = escape(str(item.get("title", "")))
@@ -159,7 +162,7 @@ def _render_usage_cards(items, limit=4):
 
 def _render_work_on(items, limit=5):
     if not items:
-        return '<p class="merge-empty">本周暂无项目分布数据。</p>'
+        return f'<p class="merge-empty">{_t("No project distribution data for this period.")}</p>'
     blocks = []
     for item in items[:limit]:
         name = escape(str(item.get("name", "")))
@@ -170,7 +173,7 @@ def _render_work_on(items, limit=5):
             f"""<div class="merge-card">
   <div class="merge-split">
     <div class="merge-card-title">{name}</div>
-    <div class="merge-meta">{sessions} 会话 · {tokens} tokens</div>
+    <div class="merge-meta">{sessions} {_t("Sessions")} · {tokens} tokens</div>
   </div>
   <div class="merge-card-text">{desc}</div>
 </div>"""
@@ -180,7 +183,7 @@ def _render_work_on(items, limit=5):
 
 def _render_daily(items, limit=7):
     if not items:
-        return '<p class="merge-empty">本周没有每日数据。</p>'
+        return f'<p class="merge-empty">{_t("No daily data for this period.")}</p>'
     blocks = []
     for item in items[:limit]:
         day = escape(str(item.get("day", "")))
@@ -189,7 +192,7 @@ def _render_daily(items, limit=7):
         blocks.append(
             f"""<div class="merge-list-row">
   <span>{day}</span>
-  <span>{sessions} 会话 · {tokens} tokens</span>
+  <span>{sessions} {_t("Sessions")} · {tokens} tokens</span>
 </div>"""
         )
     return "".join(blocks)
@@ -197,14 +200,14 @@ def _render_daily(items, limit=7):
 
 def _render_opencode_areas(items, limit=6):
     if not items:
-        return '<p class="merge-empty">本周暂无 OpenCode 项目数据。</p>'
+        return f'<p class="merge-empty">{_t("No OpenCode project data for this period.")}</p>'
     blocks = []
     for item in items[:limit]:
         blocks.append(
             f"""<div class="merge-card">
   <div class="merge-split">
     <div class="merge-card-title">{escape(str(_path_label(item.get('cwd', '')) or item.get('cwd', '')))}</div>
-    <div class="merge-meta">{___safe_int(item.get('sessions'))} 会话 · {_fmt(item.get('tokens'))} tokens</div>
+    <div class="merge-meta">{___safe_int(item.get('sessions'))} {_t("Sessions")} · {_fmt(item.get('tokens'))} tokens</div>
   </div>
 </div>"""
         )
@@ -213,7 +216,7 @@ def _render_opencode_areas(items, limit=6):
 
 def _render_notes(notes):
     if not notes:
-        return '<p class="merge-empty">暂无采集说明。</p>'
+        return f'<p class="merge-empty">{_t("No collection notes.")}</p>'
     return "".join(f'<div class="merge-note">{escape(str(note))}</div>' for note in notes[:6])
 
 
@@ -312,41 +315,41 @@ def _build_combined_banner(week, cc, cx, oc, cu, tu, ol, hm, tc=None):
     cu_msgs_per_day = round(cu_messages / cu_days, 1) if cu_days else 0
     msgs_per_day = round(total_messages / total_days, 1) if total_days else 0
     return f"""<div class="merge-banner">
-  <div class="merge-banner-head">Claude Code + Codex + OpenCode + Cursor + Trae + Trae CN + OpenClaw + Hermes 合并统计 · {escape(week)}</div>
+  <div class="merge-banner-head">{_t("Combined Stats")} · {escape(week)}</div>
   <div class="merge-banner-grid">
     <div class="merge-banner-item">
       <div class="merge-banner-value">{total_sessions}</div>
-      <div class="merge-banner-label">总 SESSIONS</div>
+      <div class="merge-banner-label">{_t("Sessions")}</div>
       <div class="merge-banner-sub">{_banner_subrows(f"CC {cc_sessions}", f"CX {cx_sessions}", f"OC {oc_sessions}", f"CU {cu_sessions}", f"TU {tu_sessions}", f"TC {tc_sessions}", f"OL {ol_sessions}", f"HM {hm_sessions}")}</div>
     </div>
     <div class="merge-banner-item">
       <div class="merge-banner-value">{_fmt(total_tokens)}</div>
-      <div class="merge-banner-label">总 Tokens</div>
+      <div class="merge-banner-label">{_t("Tokens")}</div>
       <div class="merge-banner-sub">{_banner_subrows(f"CC {_fmt(cc_tokens)}", f"CX {_fmt(cx_tokens)}", f"OC {_fmt(oc_tokens)}", f"CU {_fmt(cu_tokens)}", f"TU {_fmt(tu_tokens)}", f"HM {_fmt(hm_tokens)}")}</div>
     </div>
     <div class="merge-banner-item">
       <div class="merge-banner-value">{total_messages}</div>
-      <div class="merge-banner-label">总 MESSAGES</div>
+      <div class="merge-banner-label">{_t("Messages")}</div>
       <div class="merge-banner-sub">{_banner_subrows(f"CC {cc_messages}", f"CX {cx_messages}", f"OC {oc_messages}", f"CU {cu_messages}", f"TU {tu_messages}", f"HM {hm_messages}")}</div>
     </div>
     <div class="merge-banner-item">
       <div class="merge-banner-value">+{total_lines_added:,}/-{total_lines_removed:,}</div>
-      <div class="merge-banner-label">总 LINES</div>
+      <div class="merge-banner-label">{_t("Lines")}</div>
       <div class="merge-banner-sub">{_banner_subrows(f"CC +{cc_lines_added:,}/-{cc_lines_removed:,}", f"CX +{cx_lines_added:,}/-{cx_lines_removed:,}", f"OC +{oc_lines_added:,}/-{oc_lines_removed:,}", f"CU +{cu_lines_added:,}/-{cu_lines_removed:,}", f"TU +{tu_lines_added:,}/-{tu_lines_removed:,}")}</div>
     </div>
     <div class="merge-banner-item">
       <div class="merge-banner-value">{total_files}</div>
-      <div class="merge-banner-label">总 FILES</div>
+      <div class="merge-banner-label">{_t("Files")}</div>
       <div class="merge-banner-sub">{_banner_subrows(f"CC {cc_files}", f"CX {cx_file_impact}", f"OC {oc_file_impact}", f"CU {cu_file_impact}", f"TU {tu_file_impact}")}</div>
     </div>
     <div class="merge-banner-item">
       <div class="merge-banner-value">{total_days}</div>
-      <div class="merge-banner-label">总 Days</div>
+      <div class="merge-banner-label">{_t("Days")}</div>
       <div class="merge-banner-sub">{_banner_subrows(f"CC {cc_days}", f"CX {cx_days}", f"OC {oc_days}", f"CU {cu_days}", f"TU {tu_days}", f"OL {ol_days}", f"HM {hm_days}")}</div>
     </div>
     <div class="merge-banner-item">
       <div class="merge-banner-value">{msgs_per_day}</div>
-      <div class="merge-banner-label">Messages/Day</div>
+      <div class="merge-banner-label">{_t("Message per Day")}</div>
       <div class="merge-banner-sub">{_banner_subrows(f"CC {cc_msgs_per_day}", f"CX {cx_msgs_per_day}", f"OC {oc_msgs_per_day}", f"CU {cu_msgs_per_day}")}</div>
     </div>
   </div>
@@ -361,25 +364,25 @@ def _build_codex_section(cx):
     return f"""<section class="merge-section">
   <div class="merge-section-head">
     <div>
-      <h2>Codex 深度洞察</h2>
-  <p class="merge-section-sub">按行为模式重写，只分析工作方式、摩擦点和建议，不展示具体项目名。</p>
+      <h2>{_t("Codex Deep Insights")}</h2>
+  <p class="merge-section-sub">{_t("Behavior-driven analysis of workflows, friction points, and suggestions.")}</p>
     </div>
-    <div class="merge-section-metric">{___safe_int(cx.get("total_sessions"))} 会话 · {_fmt(cx.get("total_tokens"))} tokens</div>
+    <div class="merge-section-metric">{___safe_int(cx.get("total_sessions"))} {_t("Sessions")} · {_fmt(cx.get("total_tokens"))} tokens</div>
   </div>
 
   <div class="merge-glance">
-    <div class="merge-glance-item"><strong>What's working:</strong> {escape(str(at_a_glance.get("working", "暂无")))}</div>
-    <div class="merge-glance-item"><strong>What's hindering you:</strong> {escape(str(at_a_glance.get("hindering", "暂无")))}</div>
-    <div class="merge-glance-item"><strong>Quick wins to try:</strong> {escape(str(at_a_glance.get("quick_win", "暂无")))}</div>
-    <div class="merge-glance-item"><strong>On the horizon:</strong> {escape(str(at_a_glance.get("ambitious", "暂无")))}</div>
+    <div class="merge-glance-item"><strong>What's working:</strong> {escape(str(at_a_glance.get("working", _t("N/A"))))}</div>
+    <div class="merge-glance-item"><strong>What's hindering you:</strong> {escape(str(at_a_glance.get("hindering", _t("N/A"))))}</div>
+    <div class="merge-glance-item"><strong>Quick wins to try:</strong> {escape(str(at_a_glance.get("quick_win", _t("N/A"))))}</div>
+    <div class="merge-glance-item"><strong>On the horizon:</strong> {escape(str(at_a_glance.get("ambitious", _t("N/A"))))}</div>
   </div>
 
-  <h3 class="merge-subhead">What You Work On</h3>
+  <h3 class="merge-subhead">{_t("What You Work On")}</h3>
   <div class="merge-grid merge-grid-2">
     {_render_work_on(insights.get("work_on") or [])}
   </div>
 
-  <h3 class="merge-subhead">How You Use Codex</h3>
+  <h3 class="merge-subhead">{_t("How You Use Codex")}</h3>
   <div class="merge-card merge-narrative">
     <div class="merge-card-text">{escape(str((insights.get("narrative_parts") or [""])[0]))}</div>
     <div class="merge-card-text">{escape(str((insights.get("narrative_parts") or ["", ""])[1]))}</div>
@@ -392,94 +395,94 @@ def _build_codex_section(cx):
 
   <div class="merge-grid merge-grid-4">
     <div class="merge-card">
-      <div class="merge-card-title">活跃天数</div>
+      <div class="merge-card-title">{_t("Active Days")}</div>
       <div class="merge-kpi">{___safe_int(cx.get("active_days"))}</div>
-      <div class="merge-card-text">本周有 Codex 会话的天数</div>
+      <div class="merge-card-text">{_t("Days with Codex sessions this period")}</div>
     </div>
     <div class="merge-card">
-      <div class="merge-card-title">交互式会话</div>
+      <div class="merge-card-title">{_t("Interactive Sessions")}</div>
       <div class="merge-kpi">{___safe_int(cx.get("interactive"))}</div>
-      <div class="merge-card-text">需要人工审批/确认的会话数</div>
+      <div class="merge-card-text">{_t("Sessions requiring manual approval")}</div>
     </div>
     <div class="merge-card">
-      <div class="merge-card-title">全自动会话</div>
+      <div class="merge-card-title">{_t("Fully Automated Sessions")}</div>
       <div class="merge-kpi">{___safe_int(cx.get("full_auto"))}</div>
-      <div class="merge-card-text">approval=never 的会话数</div>
+      <div class="merge-card-text">{_t("Sessions with approval=never")}</div>
     </div>
     <div class="merge-card">
-      <div class="merge-card-title">主力模型</div>
+      <div class="merge-card-title">{_t("Primary Model")}</div>
       <div class="merge-kpi">{escape(str((insights.get("top_model") or {}).get("name") or ((cx.get("models") or [{}])[0].get("model") or "N/A")))}</div>
-      <div class="merge-card-text">本周使用最重的 Codex 模型</div>
+      <div class="merge-card-text">{_t("Most used Codex model")}</div>
     </div>
   </div>
 
   <div class="merge-grid merge-grid-3">
     <div class="merge-card">
-      <div class="merge-card-title">高频工具</div>
+      <div class="merge-card-title">{_t("Top Tools")}</div>
       <div class="merge-pill-row">{_render_pills(insights.get("top_tools") or [])}</div>
     </div>
     <div class="merge-card">
-      <div class="merge-card-title">高频命令</div>
+      <div class="merge-card-title">{_t("Top Commands")}</div>
       <div class="merge-pill-row">{_render_pills(insights.get("top_commands") or [])}</div>
     </div>
     <div class="merge-card">
-      <div class="merge-card-title">高频主题</div>
+      <div class="merge-card-title">{_t("Top Topics")}</div>
       <div class="merge-pill-row">{_render_pills(insights.get("top_topics") or [])}</div>
     </div>
   </div>
 
-  <h3 class="merge-subhead">Impressive Things You Did</h3>
+  <h3 class="merge-subhead">{_t("Impressive Things You Did")}</h3>
   <div class="merge-grid merge-grid-2">{_render_text_cards(insights.get("wins") or [])}</div>
 
-  <h3 class="merge-subhead">Where Things Go Wrong</h3>
+  <h3 class="merge-subhead">{_t("Where Things Go Wrong")}</h3>
   <div class="merge-grid merge-grid-2">{_render_text_cards(insights.get("friction") or [])}</div>
 
-  <h3 class="merge-subhead">Features to Try</h3>
+  <h3 class="merge-subhead">{_t("Features to Try")}</h3>
   <div class="merge-grid merge-grid-2">{_render_text_cards(insights.get("features") or [])}</div>
 
-  <h3 class="merge-subhead">New Ways to Use Codex</h3>
+  <h3 class="merge-subhead">{_t("New Ways to Use Codex")}</h3>
   <div class="merge-grid merge-grid-2">{_render_text_cards(insights.get("patterns") or [])}</div>
 
-  <h3 class="merge-subhead">On the Horizon</h3>
+  <h3 class="merge-subhead">{_t("On the Horizon")}</h3>
   <div class="merge-grid merge-grid-2">{_render_text_cards(insights.get("horizon") or [])}</div>
 </section>"""
 
 
 def _build_opencode_section(oc):
     if not oc:
-        return """<section class="merge-section">
+        return f"""<section class="merge-section">
   <div class="merge-section-head">
     <div>
-      <h2>OpenCode 深度洞察</h2>
-      <p class="merge-section-sub">本周仍保留空态区块，避免“看不到就像没这个工具”。</p>
+      <h2>{_t("OpenCode Deep Insights")}</h2>
+      <p class="merge-section-sub">{_t("Empty placeholder block retained.")}</p>
     </div>
-    <div class="merge-section-metric">无数据</div>
+    <div class="merge-section-metric">{_t("No data")}</div>
   </div>
   <div class="merge-card">
-    <div class="merge-card-title">本周未采集到 OpenCode 会话</div>
-    <div class="merge-card-text">这不代表你没用 OpenCode，只代表当前机器在本周没有可读的 OpenCode 本地数据。请检查 `opencode db path` 指向的数据库是否包含本周会话。</div>
+    <div class="merge-card-title">{_t("No OpenCode sessions collected this period")}</div>
+    <div class="merge-card-text">{_t("This does not mean you did not use OpenCode, only that no readable local data exists this period.")}</div>
   </div>
 </section>"""
     source = oc.get("source") or {}
     return f"""<section class="merge-section">
   <div class="merge-section-head">
     <div>
-      <h2>OpenCode 深度洞察</h2>
-      <p class="merge-section-sub">按行为模式拉齐 OpenCode 洞察，不展示具体项目名，只看节奏、摩擦和建议。</p>
+      <h2>{_t("OpenCode Deep Insights")}</h2>
+      <p class="merge-section-sub">{_t("Behavior-aligned OpenCode insights — focus on rhythm, friction, and suggestions.")}</p>
     </div>
-    <div class="merge-section-metric">{___safe_int(oc.get("total_sessions"))} 会话 · {_fmt(oc.get("total_tokens"))} tokens</div>
+    <div class="merge-section-metric">{___safe_int(oc.get("total_sessions"))} {_t("Sessions")} · {_fmt(oc.get("total_tokens"))} tokens</div>
   </div>
   <div class="merge-glance">
-    <div class="merge-glance-item"><strong>What's working:</strong> {escape(str(((oc.get("insights") or {}).get("at_a_glance") or {}).get("working", "暂无")))}</div>
-    <div class="merge-glance-item"><strong>What's hindering you:</strong> {escape(str(((oc.get("insights") or {}).get("at_a_glance") or {}).get("hindering", "暂无")))}</div>
-    <div class="merge-glance-item"><strong>Quick wins to try:</strong> {escape(str(((oc.get("insights") or {}).get("at_a_glance") or {}).get("quick_win", "暂无")))}</div>
-    <div class="merge-glance-item"><strong>On the horizon:</strong> {escape(str(((oc.get("insights") or {}).get("at_a_glance") or {}).get("ambitious", "暂无")))}</div>
+    <div class="merge-glance-item"><strong>What's working:</strong> {escape(str(((oc.get("insights") or {}).get("at_a_glance") or {}).get("working", _t("N/A"))))}</div>
+    <div class="merge-glance-item"><strong>What's hindering you:</strong> {escape(str(((oc.get("insights") or {}).get("at_a_glance") or {}).get("hindering", _t("N/A"))))}</div>
+    <div class="merge-glance-item"><strong>Quick wins to try:</strong> {escape(str(((oc.get("insights") or {}).get("at_a_glance") or {}).get("quick_win", _t("N/A"))))}</div>
+    <div class="merge-glance-item"><strong>On the horizon:</strong> {escape(str(((oc.get("insights") or {}).get("at_a_glance") or {}).get("ambitious", _t("N/A"))))}</div>
   </div>
 
-  <h3 class="merge-subhead">What You Work On</h3>
+  <h3 class="merge-subhead">{_t("What You Work On")}</h3>
   <div class="merge-grid merge-grid-2">{_render_work_on(((oc.get("insights") or {}).get("work_on") or []))}</div>
 
-  <h3 class="merge-subhead">How You Use OpenCode</h3>
+  <h3 class="merge-subhead">{_t("How You Use OpenCode")}</h3>
   <div class="merge-card merge-narrative">
     <div class="merge-card-text">{escape(str((((oc.get("insights") or {}).get("narrative_parts") or [""])[0])))}</div>
     <div class="merge-card-text">{escape(str((((oc.get("insights") or {}).get("narrative_parts") or ["", ""])[1])))}</div>
@@ -490,35 +493,35 @@ def _build_opencode_section(oc):
 
   <div class="merge-grid merge-grid-3">
     <div class="merge-card">
-      <div class="merge-card-title">总会话</div>
+      <div class="merge-card-title">{_t("Total Sessions")}</div>
       <div class="merge-kpi">{___safe_int(oc.get("total_sessions"))}</div>
-      <div class="merge-card-text">本周 OpenCode 会话总数</div>
+      <div class="merge-card-text">{_t("Total OpenCode sessions this period")}</div>
     </div>
     <div class="merge-card">
-      <div class="merge-card-title">活跃天数</div>
+      <div class="merge-card-title">{_t("Active Days")}</div>
       <div class="merge-kpi">{___safe_int(oc.get("active_days"))}</div>
-      <div class="merge-card-text">基于 session 更新时间聚合</div>
+      <div class="merge-card-text">{_t("Aggregated from session update times")}</div>
     </div>
     <div class="merge-card">
-      <div class="merge-card-title">数据源</div>
+      <div class="merge-card-title">{_t("Data Source")}</div>
       <div class="merge-kpi">{escape(str(source.get('db_path', 'N/A')))}</div>
-      <div class="merge-card-text">本地 sqlite 快照</div>
+      <div class="merge-card-text">{_t("Local sqlite snapshot")}</div>
     </div>
   </div>
 
-  <h3 class="merge-subhead">Impressive Things You Did</h3>
+  <h3 class="merge-subhead">{_t("Impressive Things You Did")}</h3>
   <div class="merge-grid merge-grid-2">{_render_text_cards(((oc.get("insights") or {}).get("wins") or []))}</div>
 
-  <h3 class="merge-subhead">Where Things Go Wrong</h3>
+  <h3 class="merge-subhead">{_t("Where Things Go Wrong")}</h3>
   <div class="merge-grid merge-grid-2">{_render_text_cards(((oc.get("insights") or {}).get("friction") or []))}</div>
 
-  <h3 class="merge-subhead">Features to Try</h3>
+  <h3 class="merge-subhead">{_t("Features to Try")}</h3>
   <div class="merge-grid merge-grid-2">{_render_text_cards(((oc.get("insights") or {}).get("features") or []))}</div>
 
-  <h3 class="merge-subhead">New Ways to Use OpenCode</h3>
+  <h3 class="merge-subhead">{_t("New Ways to Use OpenCode")}</h3>
   <div class="merge-grid merge-grid-2">{_render_text_cards(((oc.get("insights") or {}).get("patterns") or []))}</div>
 
-  <h3 class="merge-subhead">On the Horizon</h3>
+  <h3 class="merge-subhead">{_t("On the Horizon")}</h3>
   <div class="merge-grid merge-grid-2">{_render_text_cards(((oc.get("insights") or {}).get("horizon") or []))}</div>
 </section>"""
 
@@ -526,17 +529,17 @@ def _build_opencode_section(oc):
 
 def _build_cursor_section(cu):
     if not cu:
-        return """<section class="merge-section">
+        return f"""<section class="merge-section">
   <div class="merge-section-head">
     <div>
-      <h2>Cursor 深度洞察</h2>
-      <p class="merge-section-sub">本周仍保留空态区块，避免"看不到就像没这个工具"。</p>
+      <h2>{_t("Cursor Deep Insights")}</h2>
+      <p class="merge-section-sub">{_t("Empty placeholder block retained.")}</p>
     </div>
-    <div class="merge-section-metric">无数据</div>
+    <div class="merge-section-metric">{_t("No data")}</div>
   </div>
   <div class="merge-card">
-    <div class="merge-card-title">本周未采集到 Cursor 会话</div>
-    <div class="merge-card-text">这不代表你没用 Cursor，只代表当前机器在本周没有可读的 Cursor 本地数据。请检查 state.vscdb 是否包含本周 composer 会话。</div>
+    <div class="merge-card-title">{_t("No Cursor sessions collected this period")}</div>
+    <div class="merge-card-text">{_t("This does not mean you did not use Cursor, only that no readable local data exists this period.")}</div>
   </div>
 </section>"""
     insights = cu.get("insights") or {}
@@ -544,22 +547,22 @@ def _build_cursor_section(cu):
     return f"""<section class="merge-section">
   <div class="merge-section-head">
     <div>
-      <h2>Cursor 深度洞察</h2>
-      <p class="merge-section-sub">基于 composer 会话数据，分析 Cursor Agent/Chat 使用模式和代码落地情况。</p>
+      <h2>{_t("Cursor Deep Insights")}</h2>
+      <p class="merge-section-sub">{_t("Agent/Chat usage and code delivery analysis from composer session data.")}</p>
     </div>
-    <div class="merge-section-metric">{___safe_int(cu.get("total_sessions"))} 会话 · {___safe_int(cu.get("total_messages"))} 消息</div>
+    <div class="merge-section-metric">{___safe_int(cu.get("total_sessions"))} {_t("Sessions")} · {___safe_int(cu.get("total_messages"))} {_t("Messages")}</div>
   </div>
   <div class="merge-glance">
-    <div class="merge-glance-item"><strong>What's working:</strong> {escape(str(at_a_glance.get("working", "暂无")))}</div>
-    <div class="merge-glance-item"><strong>What's hindering you:</strong> {escape(str(at_a_glance.get("hindering", "暂无")))}</div>
-    <div class="merge-glance-item"><strong>Quick wins to try:</strong> {escape(str(at_a_glance.get("quick_win", "暂无")))}</div>
-    <div class="merge-glance-item"><strong>On the horizon:</strong> {escape(str(at_a_glance.get("ambitious", "暂无")))}</div>
+    <div class="merge-glance-item"><strong>What's working:</strong> {escape(str(at_a_glance.get("working", _t("N/A"))))}</div>
+    <div class="merge-glance-item"><strong>What's hindering you:</strong> {escape(str(at_a_glance.get("hindering", _t("N/A"))))}</div>
+    <div class="merge-glance-item"><strong>Quick wins to try:</strong> {escape(str(at_a_glance.get("quick_win", _t("N/A"))))}</div>
+    <div class="merge-glance-item"><strong>On the horizon:</strong> {escape(str(at_a_glance.get("ambitious", _t("N/A"))))}</div>
   </div>
 
-  <h3 class="merge-subhead">What You Work On</h3>
+  <h3 class="merge-subhead">{_t("What You Work On")}</h3>
   <div class="merge-grid merge-grid-2">{_render_work_on((insights.get("work_on") or []))}</div>
 
-  <h3 class="merge-subhead">How You Use Cursor</h3>
+  <h3 class="merge-subhead">{_t("How You Use Cursor")}</h3>
   <div class="merge-card merge-narrative">
     <div class="merge-card-text">{escape(str((insights.get("narrative_parts") or [""])[0]))}</div>
     <div class="merge-card-text">{escape(str((insights.get("narrative_parts") or ["", ""])[1]))}</div>
@@ -570,51 +573,51 @@ def _build_cursor_section(cu):
 
   <div class="merge-grid merge-grid-4">
     <div class="merge-card">
-      <div class="merge-card-title">Agent 会话</div>
+      <div class="merge-card-title">{_t("Agent Sessions")}</div>
       <div class="merge-kpi">{___safe_int(cu.get("agent_count"))}</div>
-      <div class="merge-card-text">Agent 模式会话数</div>
+      <div class="merge-card-text">{_t("Agent mode session count")}</div>
     </div>
     <div class="merge-card">
-      <div class="merge-card-title">Chat 会话</div>
+      <div class="merge-card-title">{_t("Chat Sessions")}</div>
       <div class="merge-kpi">{___safe_int(cu.get("chat_count"))}</div>
-      <div class="merge-card-text">Chat 模式会话数</div>
+      <div class="merge-card-text">{_t("Chat mode session count")}</div>
     </div>
     <div class="merge-card">
-      <div class="merge-card-title">活跃天数</div>
+      <div class="merge-card-title">{_t("Active Days")}</div>
       <div class="merge-kpi">{___safe_int(cu.get("active_days"))}</div>
-      <div class="merge-card-text">本周有 Cursor 会话的天数</div>
+      <div class="merge-card-text">{_t("Days with Cursor sessions this period")}</div>
     </div>
     <div class="merge-card">
-      <div class="merge-card-title">AI 代码块</div>
+      <div class="merge-card-title">{_t("AI Code Blocks")}</div>
       <div class="merge-kpi">{___safe_int(cu.get("ai_hashes_count"))}</div>
-      <div class="merge-card-text">AI 生成代码块数</div>
+      <div class="merge-card-text">{_t("AI-generated code block count")}</div>
     </div>
   </div>
 
-  <h3 class="merge-subhead">Impressive Things You Did</h3>
+  <h3 class="merge-subhead">{_t("Impressive Things You Did")}</h3>
   <div class="merge-grid merge-grid-2">{_render_text_cards((insights.get("wins") or []))}</div>
 
-  <h3 class="merge-subhead">Where Things Go Wrong</h3>
+  <h3 class="merge-subhead">{_t("Where Things Go Wrong")}</h3>
   <div class="merge-grid merge-grid-2">{_render_text_cards((insights.get("friction") or []))}</div>
 
-  <h3 class="merge-subhead">Features to Try</h3>
+  <h3 class="merge-subhead">{_t("Features to Try")}</h3>
   <div class="merge-grid merge-grid-2">{_render_text_cards((insights.get("features") or []))}</div>
 
-  <h3 class="merge-subhead">New Ways to Use Cursor</h3>
+  <h3 class="merge-subhead">{_t("New Ways to Use Cursor")}</h3>
   <div class="merge-grid merge-grid-2">{_render_text_cards((insights.get("patterns") or []))}</div>
 
-  <h3 class="merge-subhead">On the Horizon</h3>
+  <h3 class="merge-subhead">{_t("On the Horizon")}</h3>
   <div class="merge-grid merge-grid-2">{_render_text_cards((insights.get("horizon") or []))}</div>
 </section>"""
 
 
 def _build_trae_section(tu):
     if not tu or not tu.get("total_sessions"):
-        return """    <div class="merge-section">
+        return f"""    <div class="merge-section">
       <h2>Trae</h2>
       <div class="merge-card">
-        <div class="merge-card-title">No Trae sessions this week</div>
-        <div class="merge-card-text">Check workspaceStorage for Trae session data.</div>
+        <div class="merge-card-title">{_t("No Trae sessions this week")}</div>
+        <div class="merge-card-text">{_t("Check workspaceStorage for Trae session data.")}</div>
       </div>
     </div>"""
 
@@ -628,7 +631,7 @@ def _build_trae_section(tu):
     area_pills = "".join(
         f'<span class="merge-pill">{escape(str(a.get("cwd", "")))} <b>{a.get("sessions", "")}</b></span>'
         for a in areas
-    ) or '<span class="merge-empty">N/A</span>'
+    ) or f'<span class="merge-empty">{_t("N/A")}</span>'
 
     usage_cards = ""
     for item in (insights.get("usage_cards") or [])[:3]:
@@ -647,37 +650,37 @@ def _build_trae_section(tu):
 
     section = f"""    <div class="merge-section">
       <h2>Trae</h2>
-      <p class="merge-section-sub">WorkspaceStorage memento data, Builder/Chat mode analysis.</p>
+      <p class="merge-section-sub">{_t("WorkspaceStorage memento data, Builder/Chat mode analysis.")}</p>
 
       <div class="merge-stat-row">
         <div class="merge-stat">
           <div class="merge-stat-value">{total_sessions}</div>
-          <div class="merge-stat-label">Sessions</div>
+          <div class="merge-stat-label">{_t("Sessions")}</div>
         </div>
         <div class="merge-stat">
           <div class="merge-stat-value">{total_messages}</div>
-          <div class="merge-stat-label">Messages</div>
+          <div class="merge-stat-label">{_t("Messages")}</div>
         </div>
         <div class="merge-stat">
           <div class="merge-stat-value">{agent_count}/{chat_count}</div>
-          <div class="merge-stat-label">Builder/Chat</div>
+          <div class="merge-stat-label">{_t("Builder/Chat")}</div>
         </div>
         <div class="merge-stat">
           <div class="merge-stat-value">{len(areas)}</div>
-          <div class="merge-stat-label">Projects</div>
+          <div class="merge-stat-label">{_t("Projects")}</div>
         </div>
       </div>
 
-      <h3 class="merge-subhead">How You Use Trae</h3>
+      <h3 class="merge-subhead">{_t("How You Use Trae")}</h3>
       <div class="merge-grid merge-grid-3">
 {usage_cards}
       </div>
 
-      <h3 class="merge-subhead">Active Projects</h3>
+      <h3 class="merge-subhead">{_t("Active Projects")}</h3>
       <div class="merge-pill-row">{area_pills}</div>
 """
     if wins_html:
-        section += f"""      <h3 class="merge-subhead">Highlights</h3>
+        section += f"""      <h3 class="merge-subhead">{_t("Highlights")}</h3>
       <div class="merge-grid merge-grid-3">
 {wins_html}
       </div>
@@ -691,12 +694,12 @@ def _build_trae_section(tu):
 
 def _build_trae_cn_section(tu):
     if not tu or not tu.get("total_sessions"):
-        return """
+        return f"""
     <div class="merge-section">
       <h2>Trae CN</h2>
       <div class="merge-card">
-        <div class="merge-card-title">No Trae CN sessions this week</div>
-        <div class="merge-card-text">Check workspaceStorage for Trae CN session data.</div>
+        <div class="merge-card-title">{_t("No Trae CN sessions this week")}</div>
+        <div class="merge-card-text">{_t("Check workspaceStorage for Trae CN session data.")}</div>
       </div>
     </div>"""
 
@@ -710,7 +713,7 @@ def _build_trae_cn_section(tu):
     area_pills = "".join(
         f'<span class="merge-pill">{escape(str(a.get("cwd", "")))} <b>{a.get("sessions", "")}</b></span>'
         for a in areas
-    ) or '<span class="merge-empty">N/A</span>'
+    ) or f'<span class="merge-empty">{_t("N/A")}</span>'
 
     usage_cards = ""
     for item in (insights.get("usage_cards") or [])[:3]:
@@ -730,38 +733,38 @@ def _build_trae_cn_section(tu):
     section = f"""
     <div class="merge-section">
       <h2>Trae CN</h2>
-      <p class="merge-section-sub">WorkspaceStorage memento data, Builder/Chat mode analysis.</p>
+      <p class="merge-section-sub">{_t("WorkspaceStorage memento data, Builder/Chat mode analysis.")}</p>
 
       <div class="merge-stat-row">
         <div class="merge-stat">
           <div class="merge-stat-value">{total_sessions}</div>
-          <div class="merge-stat-label">Sessions</div>
+          <div class="merge-stat-label">{_t("Sessions")}</div>
         </div>
         <div class="merge-stat">
           <div class="merge-stat-value">{total_messages}</div>
-          <div class="merge-stat-label">Messages</div>
+          <div class="merge-stat-label">{_t("Messages")}</div>
         </div>
         <div class="merge-stat">
           <div class="merge-stat-value">{agent_count}/{chat_count}</div>
-          <div class="merge-stat-label">Builder/Chat</div>
+          <div class="merge-stat-label">{_t("Builder/Chat")}</div>
         </div>
         <div class="merge-stat">
           <div class="merge-stat-value">{len(areas)}</div>
-          <div class="merge-stat-label">Projects</div>
+          <div class="merge-stat-label">{_t("Projects")}</div>
         </div>
       </div>
 
-      <h3 class="merge-subhead">How You Use Trae CN</h3>
+      <h3 class="merge-subhead">{_t("How You Use Trae CN")}</h3>
       <div class="merge-grid merge-grid-3">
 {usage_cards}
       </div>
 
-      <h3 class="merge-subhead">Active Projects</h3>
+      <h3 class="merge-subhead">{_t("Active Projects")}</h3>
       <div class="merge-pill-row">{area_pills}</div>
 """
     if wins_html:
         section += f"""
-      <h3 class="merge-subhead">Highlights</h3>
+      <h3 class="merge-subhead">{_t("Highlights")}</h3>
       <div class="merge-grid merge-grid-3">
 {wins_html}
       </div>
@@ -770,17 +773,17 @@ def _build_trae_cn_section(tu):
     return section
 def _build_openclaw_section(ol):
     if not ol:
-        return """<section class="merge-section">
+        return f"""<section class="merge-section">
   <div class="merge-section-head">
     <div>
-      <h2>OpenClaw 深度洞察</h2>
-      <p class="merge-section-sub">本周仍保留空态区块，避免"看不到就像没这个工具"。</p>
+      <h2>{_t("OpenClaw Deep Insights")}</h2>
+      <p class="merge-section-sub">{_t("Empty placeholder block retained.")}</p>
     </div>
-    <div class="merge-section-metric">无数据</div>
+    <div class="merge-section-metric">{_t("No data")}</div>
   </div>
   <div class="merge-card">
-    <div class="merge-card-title">本周未采集到 OpenClaw 会话</div>
-    <div class="merge-card-text">这不代表你没用 OpenClaw，只代表当前机器在本周没有可读的 OpenClaw 本地数据。请检查 ~/.openclaw/logs/commands.log 是否包含本周会话事件。</div>
+    <div class="merge-card-title">{_t("No OpenClaw sessions collected this period")}</div>
+    <div class="merge-card-text">{_t("This does not mean you did not use OpenClaw, only that no readable local data exists this period.")}</div>
   </div>
 </section>"""
     insights = ol.get("insights") or {}
@@ -791,27 +794,27 @@ def _build_openclaw_section(ol):
     agent_pills = "".join(
         f'<span class="merge-pill">{escape(str(a.get("name", "")))} <b>{a.get("sessions", "")}</b></span>'
         for a in agents[:6]
-    ) or '<span class="merge-empty">暂无</span>'
+    ) or '<span class="merge-empty">' + _t("N/A") + '</span>'
 
     return f"""<section class="merge-section">
   <div class="merge-section-head">
     <div>
-      <h2>OpenClaw 深度洞察</h2>
-      <p class="merge-section-sub">基于 commands.log 会话事件分析多 agent 编排模式。</p>
+      <h2>{_t("OpenClaw Deep Insights")}</h2>
+      <p class="merge-section-sub">{_t("Multi-agent orchestration patterns from commands.log session events.")}</p>
     </div>
-    <div class="merge-section-metric">{___safe_int(ol.get("total_sessions"))} 会话 · {___safe_int(ol.get("active_days"))} 活跃天</div>
+    <div class="merge-section-metric">{___safe_int(ol.get("total_sessions"))} {_t("Sessions")} · {___safe_int(ol.get("active_days"))} {_t("Days")}</div>
   </div>
   <div class="merge-glance">
-    <div class="merge-glance-item"><strong>What's working:</strong> {escape(str(at_a_glance.get("working", "暂无")))}</div>
-    <div class="merge-glance-item"><strong>What's hindering you:</strong> {escape(str(at_a_glance.get("hindering", "暂无")))}</div>
-    <div class="merge-glance-item"><strong>Quick wins to try:</strong> {escape(str(at_a_glance.get("quick_win", "暂无")))}</div>
-    <div class="merge-glance-item"><strong>On the horizon:</strong> {escape(str(at_a_glance.get("ambitious", "暂无")))}</div>
+    <div class="merge-glance-item"><strong>What's working:</strong> {escape(str(at_a_glance.get("working", _t("N/A"))))}</div>
+    <div class="merge-glance-item"><strong>What's hindering you:</strong> {escape(str(at_a_glance.get("hindering", _t("N/A"))))}</div>
+    <div class="merge-glance-item"><strong>Quick wins to try:</strong> {escape(str(at_a_glance.get("quick_win", _t("N/A"))))}</div>
+    <div class="merge-glance-item"><strong>On the horizon:</strong> {escape(str(at_a_glance.get("ambitious", _t("N/A"))))}</div>
   </div>
 
-  <h3 class="merge-subhead">Agent 分布</h3>
+  <h3 class="merge-subhead">{_t("Agent Distribution")}</h3>
   <div class="merge-pill-row">{agent_pills}</div>
 
-  <h3 class="merge-subhead">How You Use OpenClaw</h3>
+  <h3 class="merge-subhead">{_t("How You Use OpenClaw")}</h3>
   <div class="merge-card merge-narrative">
     <div class="merge-card-text">{escape(str((insights.get("narrative_parts") or [""])[0]))}</div>
     <div class="merge-card-text">{escape(str((insights.get("narrative_parts") or ["", ""])[1]))}</div>
@@ -822,52 +825,52 @@ def _build_openclaw_section(ol):
 
   <div class="merge-grid merge-grid-3">
     <div class="merge-card">
-      <div class="merge-card-title">新会话</div>
+      <div class="merge-card-title">{_t("New Sessions")}</div>
       <div class="merge-kpi">{___safe_int(ol.get("total_sessions"))}</div>
-      <div class="merge-card-text">本周 OpenClaw 新会话数</div>
+      <div class="merge-card-text">{_t("New OpenClaw sessions this period")}</div>
     </div>
     <div class="merge-card">
-      <div class="merge-card-title">活跃天数</div>
+      <div class="merge-card-title">{_t("Active Days")}</div>
       <div class="merge-kpi">{___safe_int(ol.get("active_days"))}</div>
-      <div class="merge-card-text">OpenClaw 会话覆盖天数</div>
+      <div class="merge-card-text">{_t("OpenClaw session coverage days")}</div>
     </div>
     <div class="merge-card">
-      <div class="merge-card-title">重置事件</div>
+      <div class="merge-card-title">{_t("Reset Events")}</div>
       <div class="merge-kpi">{___safe_int(ol.get("reset_events"))}</div>
-      <div class="merge-card-text">会话重置次数</div>
+      <div class="merge-card-text">{_t("Session reset count")}</div>
     </div>
   </div>
 
-  <h3 class="merge-subhead">Impressive Things You Did</h3>
+  <h3 class="merge-subhead">{_t("Impressive Things You Did")}</h3>
   <div class="merge-grid merge-grid-2">{_render_text_cards(insights.get("wins") or [])}</div>
 
-  <h3 class="merge-subhead">Where Things Go Wrong</h3>
+  <h3 class="merge-subhead">{_t("Where Things Go Wrong")}</h3>
   <div class="merge-grid merge-grid-2">{_render_text_cards(insights.get("friction") or [])}</div>
 
-  <h3 class="merge-subhead">Features to Try</h3>
+  <h3 class="merge-subhead">{_t("Features to Try")}</h3>
   <div class="merge-grid merge-grid-2">{_render_text_cards(insights.get("features") or [])}</div>
 
-  <h3 class="merge-subhead">New Ways to Use OpenClaw</h3>
+  <h3 class="merge-subhead">{_t("New Ways to Use OpenClaw")}</h3>
   <div class="merge-grid merge-grid-2">{_render_text_cards(insights.get("patterns") or [])}</div>
 
-  <h3 class="merge-subhead">On the Horizon</h3>
+  <h3 class="merge-subhead">{_t("On the Horizon")}</h3>
   <div class="merge-grid merge-grid-2">{_render_text_cards(insights.get("horizon") or [])}</div>
 </section>"""
 
 
 def _build_hermes_section(hm):
     if not hm:
-        return """<section class="merge-section">
+        return f"""<section class="merge-section">
   <div class="merge-section-head">
     <div>
-      <h2>Hermes 深度洞察</h2>
-      <p class="merge-section-sub">本周仍保留空态区块，避免"看不到就像没这个工具"。</p>
+      <h2>{_t("Hermes Deep Insights")}</h2>
+      <p class="merge-section-sub">{_t("Empty placeholder block retained.")}</p>
     </div>
-    <div class="merge-section-metric">无数据</div>
+    <div class="merge-section-metric">{_t("No data")}</div>
   </div>
   <div class="merge-card">
-    <div class="merge-card-title">本周未采集到 Hermes 会话</div>
-    <div class="merge-card-text">这不代表你没用 Hermes，只代表当前机器在本周没有可读的 Hermes 本地数据。请检查 ~/.hermes/state.db 是否包含本周会话。</div>
+    <div class="merge-card-title">{_t("No Hermes sessions collected this period")}</div>
+    <div class="merge-card-text">{_t("This does not mean you did not use Hermes, only that no readable local data exists this period.")}</div>
   </div>
 </section>"""
     insights = hm.get("insights") or {}
@@ -878,19 +881,19 @@ def _build_hermes_section(hm):
     return f"""<section class="merge-section">
   <div class="merge-section-head">
     <div>
-      <h2>Hermes 深度洞察</h2>
-      <p class="merge-section-sub">基于 state.db 会话数据，分析模型使用、工具调用和执行模式。</p>
+      <h2>{_t("Hermes Deep Insights")}</h2>
+      <p class="merge-section-sub">{_t("Model usage, tool calls, and execution patterns from state.db session data.")}</p>
     </div>
-    <div class="merge-section-metric">{___safe_int(hm.get("total_sessions"))} 会话 · {_fmt(hm.get("total_tokens"))} tokens</div>
+    <div class="merge-section-metric">{___safe_int(hm.get("total_sessions"))} {_t("Sessions")} · {_fmt(hm.get("total_tokens"))} tokens</div>
   </div>
   <div class="merge-glance">
-    <div class="merge-glance-item"><strong>What's working:</strong> {escape(str(at_a_glance.get("working", "暂无")))}</div>
-    <div class="merge-glance-item"><strong>What's hindering you:</strong> {escape(str(at_a_glance.get("hindering", "暂无")))}</div>
-    <div class="merge-glance-item"><strong>Quick wins to try:</strong> {escape(str(at_a_glance.get("quick_win", "暂无")))}</div>
-    <div class="merge-glance-item"><strong>On the horizon:</strong> {escape(str(at_a_glance.get("ambitious", "暂无")))}</div>
+    <div class="merge-glance-item"><strong>What's working:</strong> {escape(str(at_a_glance.get("working", _t("N/A"))))}</div>
+    <div class="merge-glance-item"><strong>What's hindering you:</strong> {escape(str(at_a_glance.get("hindering", _t("N/A"))))}</div>
+    <div class="merge-glance-item"><strong>Quick wins to try:</strong> {escape(str(at_a_glance.get("quick_win", _t("N/A"))))}</div>
+    <div class="merge-glance-item"><strong>On the horizon:</strong> {escape(str(at_a_glance.get("ambitious", _t("N/A"))))}</div>
   </div>
 
-  <h3 class="merge-subhead">How You Use Hermes</h3>
+  <h3 class="merge-subhead">{_t("How You Use Hermes")}</h3>
   <div class="merge-card merge-narrative">
     <div class="merge-card-text">{escape(str((insights.get("narrative_parts") or [""])[0]))}</div>
     <div class="merge-card-text">{escape(str((insights.get("narrative_parts") or ["", ""])[1]))}</div>
@@ -901,55 +904,55 @@ def _build_hermes_section(hm):
 
   <div class="merge-grid merge-grid-4">
     <div class="merge-card">
-      <div class="merge-card-title">模型</div>
+      <div class="merge-card-title">{_t("Model")}</div>
       <div class="merge-kpi">{escape(str((models[0] or {}).get("model", "N/A") if models else "N/A"))}</div>
-      <div class="merge-card-text">主力模型</div>
+      <div class="merge-card-text">{_t("Primary Model")}</div>
     </div>
     <div class="merge-card">
-      <div class="merge-card-title">工具调用</div>
+      <div class="merge-card-title">{_t("Tool Calls")}</div>
       <div class="merge-kpi">{___safe_int(hm.get("tool_call_count"))}</div>
-      <div class="merge-card-text">本周工具调用总数</div>
+      <div class="merge-card-text">{_t("Total tool calls this period")}</div>
     </div>
     <div class="merge-card">
-      <div class="merge-card-title">Token 用量</div>
+      <div class="merge-card-title">{_t("Token Usage")}</div>
       <div class="merge-kpi">{_fmt(hm.get("total_tokens"))}</div>
-      <div class="merge-card-text">输入+输出 token</div>
+      <div class="merge-card-text">{_t("Input+Output tokens")}</div>
     </div>
     <div class="merge-card">
-      <div class="merge-card-title">活跃天数</div>
+      <div class="merge-card-title">{_t("Active Days")}</div>
       <div class="merge-kpi">{___safe_int(hm.get("active_days"))}</div>
-      <div class="merge-card-text">基于会话开始时间</div>
+      <div class="merge-card-text">{_t("Based on session start time")}</div>
     </div>
   </div>
 
   <div class="merge-grid merge-grid-3">
     <div class="merge-card">
-      <div class="merge-card-title">模型分布</div>
+      <div class="merge-card-title">{_t("Model Distribution")}</div>
       <div class="merge-pill-row">{_render_pills(models, "model", "sessions", limit=6)}</div>
     </div>
     <div class="merge-card">
-      <div class="merge-card-title">高频工具</div>
+      <div class="merge-card-title">{_t("Top Tools")}</div>
       <div class="merge-pill-row">{_render_pills(top_tools or [], "name", "count", limit=8)}</div>
     </div>
     <div class="merge-card">
-      <div class="merge-card-title">数据源</div>
+      <div class="merge-card-title">{_t("Data Source")}</div>
       <div class="merge-pill-row"><span class="merge-pill">state.db</span></div>
     </div>
   </div>
 
-  <h3 class="merge-subhead">Impressive Things You Did</h3>
+  <h3 class="merge-subhead">{_t("Impressive Things You Did")}</h3>
   <div class="merge-grid merge-grid-2">{_render_text_cards(insights.get("wins") or [])}</div>
 
-  <h3 class="merge-subhead">Where Things Go Wrong</h3>
+  <h3 class="merge-subhead">{_t("Where Things Go Wrong")}</h3>
   <div class="merge-grid merge-grid-2">{_render_text_cards(insights.get("friction") or [])}</div>
 
-  <h3 class="merge-subhead">Features to Try</h3>
+  <h3 class="merge-subhead">{_t("Features to Try")}</h3>
   <div class="merge-grid merge-grid-2">{_render_text_cards(insights.get("features") or [])}</div>
 
-  <h3 class="merge-subhead">New Ways to Use Hermes</h3>
+  <h3 class="merge-subhead">{_t("New Ways to Use Hermes")}</h3>
   <div class="merge-grid merge-grid-2">{_render_text_cards(insights.get("patterns") or [])}</div>
 
-  <h3 class="merge-subhead">On the Horizon</h3>
+  <h3 class="merge-subhead">{_t("On the Horizon")}</h3>
   <div class="merge-grid merge-grid-2">{_render_text_cards(insights.get("horizon") or [])}</div>
 </section>"""
 
@@ -1135,22 +1138,25 @@ def merge(claude_path, codex_path, opencode_path, cursor_path, trae_path, opencl
     injection = "\n".join(part for part in [codex_section, opencode_section, cursor_section, trae_section, openclaw_section, hermes_section, trae_cn_section, raw_block] if part)
     body_end = html.rfind("</body>")
     if body_end == -1:
-        raise RuntimeError("无效的 Claude HTML：未找到 </body>")
+        raise RuntimeError({_t("Invalid Claude HTML: </body> tag not found")})
     container_close = html.rfind("</div>", 0, body_end)
     if container_close == -1:
-        raise RuntimeError("无效的 Claude HTML：未找到容器结束标签")
+        raise RuntimeError({_t("Invalid Claude HTML: container closing tag not found")})
     html = html[:container_close] + "\n" + injection + "\n" + html[container_close:]
 
     os.makedirs(os.path.dirname(out_path) or ".", exist_ok=True)
-    with open(out_path, "w", encoding="utf-8") as f:
-        f.write(html)
-
+    
     # Language post-processing
     lang = os.environ.get("AGENTS_REPORT_LANG", "zh")
-    if lang == "en":
-        translated = translate_html(html, lang)
-        with open(out_path, "w", encoding="utf-8") as _tf:
-            _tf.write(translated)
+    
+    # Set lang attribute on <html> tag
+    lang_attr = "zh-CN" if lang == "zh" else "en"
+    html = html.replace("<html>", f'<html lang="{lang_attr}">', 1)
+    
+    # Apply language post-processing (ZH: EN→ZH for Claude headers, EN: full ZH→EN)
+    translated = translate_html(html, lang)
+    with open(out_path, "w", encoding="utf-8") as f:
+        f.write(translated)
 
     print(f"Combined report: {out_path}", file=sys.stderr)
 
@@ -1158,10 +1164,72 @@ def merge(claude_path, codex_path, opencode_path, cursor_path, trae_path, opencl
 def translate_html(html, lang="zh"):
     """Post-process HTML to match target language."""
     if lang == "zh":
+        # Apply EN→ZH replacements for known English headers from Claude Code insights
+        _EN_TO_ZH = {k: v for k, v in _ZH_MAP.items()
+                      if len(k) >= 4 and not any('\u4e00' <= c <= '\u9fff' for c in k)
+                      and len(v) >= 2 and any('\u4e00' <= c <= '\u9fff' for c in v)}
+        for en_phrase, zh_phrase in sorted(_EN_TO_ZH.items(), key=lambda x: -len(x[0])):
+            html = html.replace(en_phrase, zh_phrase)
         return html
-    _EN = {v: k for k, v in _ZH_MAP.items() if len(v) > 1}
+    # Build ZH→EN map from both directions in _ZH_MAP:
+    #   Direction A: EN key → ZH value  (reverse: ZH→EN)
+    #   Direction B: ZH key → EN value  (direct: ZH→EN)
+    _EN = {}
+    for k, v in _ZH_MAP.items():
+        # Direction A: EN key → ZH value — reverse to ZH→EN
+        if len(v) >= 2 and any('\u4e00' <= c <= '\u9fff' for c in v):
+            _EN[v] = k
+        # Direction B: ZH key → EN value — use directly (wins on collision)
+        if len(k) >= 3 and any('\u4e00' <= c <= '\u9fff' for c in k):
+            _EN[k] = v
+    
+    # Build templates from both ZH→EN directions
+    _TEMPLATES = {}
+    for k, v in _ZH_MAP.items():
+        if "{" in k and "}" in k and any('\u4e00' <= c <= '\u9fff' for c in k):
+            _TEMPLATES[k] = v  # ZH key with placeholders → EN value
+        if "{" in v and "}" in v and any('\u4e00' <= c <= '\u9fff' for c in v):
+            _TEMPLATES[v] = k  # ZH value with placeholders → EN key
+    for zh_template, en_template in sorted(_TEMPLATES.items(), key=lambda x: -len(x[0])):
+        try:
+            parts = re.split(r"(\{[^}]+\})", zh_template)
+            regex_parts = []
+            var_names = []
+            for part in parts:
+                if part.startswith("{") and part.endswith("}"):
+                    var_names.append(part[1:-1])
+                    regex_parts.append(r"([\d.,a-zA-Z_\u4e00-\u9fff \-]+)")
+                else:
+                    regex_parts.append(re.escape(part))
+            pattern = "".join(regex_parts)
+            replacement = en_template
+            for i, vname in enumerate(var_names):
+                replacement = replacement.replace("{" + vname + "}", "\\" + str(i + 1))
+            html = re.sub(pattern, replacement, html)
+        except Exception:
+            pass
+    
+    # Phase 2: Exact string replacement with Chinese-quote normalization
+    # HTML text nodes may have "“看不到”" but _ZH_MAP has "看不到"
+    # Strategy: for each ZH phrase not found in HTML, build a regex that allows
+    # optional Chinese quotes between CJK characters and try matching
+    _QUOTE_RE = re.compile(r'[“”‘’「」]')
     for zh_phrase, en_phrase in sorted(_EN.items(), key=lambda x: -len(x[0])):
-        html = html.replace(zh_phrase, en_phrase)
+        if zh_phrase in html:
+            html = html.replace(zh_phrase, en_phrase)
+        elif any('一' <= c <= '鿿' for c in zh_phrase):
+            # Build regex: allow optional Chinese quotes between any CJK chars
+            pattern_parts = []
+            for c in zh_phrase:
+                pattern_parts.append(re.escape(c))
+                if '一' <= c <= '鿿':
+                    pattern_parts.append(r'[“”‘’「」]*')
+            pattern = ''.join(pattern_parts)
+            try:
+                html = re.sub(pattern, en_phrase, html)
+            except Exception:
+                pass
+    
     return html
 
 if __name__ == "__main__":

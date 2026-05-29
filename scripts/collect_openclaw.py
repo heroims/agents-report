@@ -16,6 +16,10 @@ _scripts_dir = str((__import__('pathlib').Path(__file__).resolve().parent))
 if _scripts_dir not in _sys.path:
     _sys.path.insert(0, _scripts_dir)
 from period_utils import period_start_end
+from i18n import T as _I18nT
+_LANG = _I18nT.detect()
+_I18N = _I18nT(_LANG)
+_t = _I18N
 
 OPENCLAW_COMMANDS_LOG = Path.home() / ".openclaw" / "logs" / "commands.log"
 
@@ -168,8 +172,8 @@ def build_insights(data):
     sources = data.get("sources") or []
     daily = data.get("daily") or []
 
-    top_agent = agents[0]["name"] if agents else "未知"
-    top_source = sources[0]["name"] if sources else "未知"
+    top_agent = agents[0]["name"] if agents else _t("Unknown")
+    top_source = sources[0]["name"] if sources else _t("Unknown")
     peak_day = max(daily, key=lambda d: d["sessions"], default=None)
 
     agent_names = ", ".join(a["name"] for a in agents[:3]) or "多个 agent"
@@ -179,7 +183,7 @@ def build_insights(data):
             f"OpenClaw 本周启动了 {total_sessions} 个新会话、{data.get('reset_events', 0)} 次重置，分布在 {active_days} 个活跃日上。"
             f"主力 agent 是 {top_agent}，主要通过 {top_source} 触发，说明你的多 agent 编排已经开始常态化。"
             if total_sessions
-            else "本周 OpenClaw 无活动。"
+            else _t("No OpenClaw activity this period.")
         ),
         "hindering": (
             "当前 OpenClaw 的采集数据仅限于会话创建和重置事件，缺乏 token 用量、工具调用、代码改动等细粒度指标，"
@@ -208,22 +212,22 @@ def build_insights(data):
 
     usage_cards = [
         {
-            "title": "会话密度",
+            "title": _t("Session Density"),
             "value": f"{sessions_per_day}/day",
             "desc": f"平均每天 {sessions_per_day} 个新会话，说明 OpenClaw 已经成为常用入口。",
         },
         {
-            "title": "Agent 多样性",
+            "title": _t("Agent Diversity"),
             "value": str(len(agents)),
             "desc": f"本周使用了 {len(agents)} 个不同的 agent，编排能力比较活跃。",
         },
         {
-            "title": "触发来源",
+            "title": _t("Trigger Sources"),
             "value": top_source,
             "desc": f"主要触发来源是 {top_source}，说明你习惯从特定渠道启动 agent。",
         },
         {
-            "title": "重置频率",
+            "title": _t("Reset Frequency"),
             "value": str(data.get("reset_events", 0)),
             "desc": f"本周发生了 {data.get('reset_events', 0)} 次会话重置，可能反映了一些方向调整或上下文刷新。",
         },
@@ -231,55 +235,55 @@ def build_insights(data):
 
     wins = [
         {
-            "title": "多 agent 编排已进入日常",
+            "title": _t("Multi-agent orchestration now daily"),
             "detail": f"{total_sessions} 个新会话分布在 {active_days} 天，不是偶尔测试，是真实的日常使用。",
         },
         {
-            "title": f"{top_agent} 已经成为主力 agent",
+            "title": f"{top_agent} {_t("has become the primary agent")}",
             "detail": f"从分布看，{top_agent} 承担了最多的会话量，说明你在这个 agent 上已经找到了适合的使用模式。",
         },
     ]
 
     friction = [
         {
-            "title": "数据局限于启动事件",
+            "title": _t("Data limited to startup events"),
             "detail": "目前只能看到会话创建和重置，看不到 token 消耗、工具调用、文件改动，所以无法做深度分析。",
         },
         {
-            "title": "需要更细的执行数据",
+            "title": _t("Need finer execution data"),
             "detail": "如果后续 OpenClaw 能输出类似 rollout 的执行日志，就能从活跃度报告升级成执行质量报告。",
         },
     ]
 
     features = [
         {
-            "title": "让每个 agent 都有明确的职责边界",
+            "title": _t("Give each agent clear responsibility boundaries"),
             "detail": "既然多 agent 编排已经是常态，就把每个 agent 负责什么、不负责什么写清楚，减少重合和浪费。",
         },
         {
-            "title": "把高频 agent 的启动方式固化",
+            "title": _t("Solidify high-frequency agent launch methods"),
             "detail": f"既然 {top_agent} 是最活跃的，就把它最常用的触发方式、输入格式、预期输出标准化。",
         },
     ]
 
     patterns = [
         {
-            "title": "OpenClaw 更像编排层，而不是单一执行工具",
+            "title": _t("OpenClaw is orchestration layer"),
             "summary": "你主要用它管理多个 agent 的会话，而不是把它本身当作一个编码 agent 来用。",
         },
         {
-            "title": "你已经形成了稳定的 agent 组合",
+            "title": _t("Stable agent combination formed"),
             "summary": f"集中在 {agent_names}，说明你已经在根据自己的需求筛选和搭配 agent。",
         },
     ]
 
     horizon = [
         {
-            "title": "从活跃监控升级到质量监控",
+            "title": _t("From activity monitoring to quality monitoring"),
             "detail": "一旦补上 token 和工具调用数据，OpenClaw 就可以开始分析执行效率和问题定位。",
         },
         {
-            "title": "把 agent 编排策略沉淀成规则",
+            "title": _t("Solidify agent orchestration into rules"),
             "detail": "既然 agent 使用模式已经成型，下一阶段就是把选择规则和编排策略固化成可复用的配置。",
         },
     ]
@@ -419,9 +423,9 @@ def generate_html(data, out_path):
     </div>
 
     <div class="stats-row">
-      <div class="stat"><div class="stat-value">{total_sessions}</div><div class="stat-label">新会话</div></div>
-      <div class="stat"><div class="stat-value">{reset_events}</div><div class="stat-label">重置事件</div></div>
-      <div class="stat"><div class="stat-value">{active_days}</div><div class="stat-label">活跃天数</div></div>
+      <div class="stat"><div class="stat-value">{total_sessions}</div><div class="stat-label">' + _t("New Sessions") + '</div></div>
+      <div class="stat"><div class="stat-value">{reset_events}</div><div class="stat-label">' + _t("Reset Events") + '</div></div>
+      <div class="stat"><div class="stat-value">{active_days}</div><div class="stat-label">' + _t("Active Days") + '</div></div>
     </div>
 
     <h2>Agent 分布</h2>

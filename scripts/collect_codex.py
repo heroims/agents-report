@@ -17,6 +17,9 @@ _scripts_dir = str((__import__('pathlib').Path(__file__).resolve().parent))
 if _scripts_dir not in _sys.path:
     _sys.path.insert(0, _scripts_dir)
 from period_utils import period_start_end
+from i18n import T as _I18nT
+_LANG = _I18nT.detect()
+_I18N = _I18nT(_LANG)
 
 CODEX_DB = Path.home() / ".codex" / "state_5.sqlite"
 
@@ -70,7 +73,7 @@ def _safe_text(value):
 def _normalize_session_label(title, first_user_message):
     text = (title or first_user_message or "").strip()
     if not text:
-        return "未命名会话"
+        return _I18N("Unnamed Session")
     first_line = text.splitlines()[0].strip()
     return first_line[:90]
 
@@ -144,16 +147,16 @@ def _workstream_label(index):
 def _codex_work_focus(detail):
     title = str(detail.get("title") or "").lower()
     if any(word in title for word in ("报告", "采集", "getagt", "analyzeagt", "report")):
-        return "报告采集与生成"
+        return _I18N("Report Collection & Generation")
     if any(word in title for word in ("review", "code review", "审查")):
-        return "代码审查"
+        return _I18N("Code Review")
     if any(word in title for word in ("bug", "修复", "排查", "错误", "异常", "fix")):
-        return "Bug 排查与修复"
+        return _I18N("Bug Investigation & Fix")
     if any(word in title for word in ("agents.md", "contributor guide", "文档", "规范", "readme")):
-        return "文档与规范"
+        return _I18N("Documentation & Standards")
     if _safe_int(detail.get("patch_files")) > 0 or _safe_int(detail.get("patch_success")) > 0:
-        return "改动落地"
-    return "阅读分析"
+        return _I18N("Implementation Delivery")
+    return _I18N("Read & Analysis")
 
 
 def _parse_rollout(path_value, period_start_iso=None, period_end_iso=None):
@@ -360,9 +363,9 @@ def _summarize_work_patterns(data, thread_details, totals):
     completion_ratio = round(completed_sessions / total_sessions * 100) if total_sessions else 0
     patch_session_ratio = round(patched_sessions / total_sessions * 100) if total_sessions else 0
     friction_events = aborted_turns + compactions
-    dominant_mode = "全自动优先" if full_auto >= interactive else "交互式优先"
-    tool_list = ", ".join(item["name"] for item in top_tools[:3]) or "工具调用"
-    command_list = ", ".join(item["name"] for item in top_commands[:4]) or "命令执行"
+    dominant_mode = _I18N("Fully Auto Priority") if full_auto >= interactive else _I18N("Interactive Priority")
+    tool_list = ", ".join(item["name"] for item in top_tools[:3]) or _I18N("Tool Calls")
+    command_list = ", ".join(item["name"] for item in top_commands[:4]) or _I18N("Command Execution")
 
     work_groups = defaultdict(lambda: {
         "sessions": 0,
@@ -400,22 +403,22 @@ def _summarize_work_patterns(data, thread_details, totals):
 
     usage_cards = [
         {
-            "title": "执行密度",
+            "title": _I18N("Execution Density"),
             "value": f"{avg_messages} msgs/session",
             "desc": f"每个会话平均约 {avg_messages} 条消息，说明你通常会把 Codex 拉进真实来回迭代，而不是一问一答就结束。",
         },
         {
-            "title": "工具驱动",
+            "title": _I18N("Tool-Driven"),
             "value": sum(item["count"] for item in top_tools),
             "desc": f"高频工具集中在 {tool_list}，说明这周的使用方式以真实读写和操作为主，而不是停留在解释层。",
         },
         {
-            "title": "落地强度",
+            "title": _I18N("Implementation Intensity"),
             "value": patch_success,
             "desc": f"成功补丁 {patch_success} 次，影响 {patch_files} 个文件，总代码变更 +{lines_added}/-{lines_removed} 行，执行闭环是存在的。",
         },
         {
-            "title": "收口情况",
+            "title": _I18N("Closure Status"),
             "value": f"{completion_ratio}%",
             "desc": f"约 {completed_sessions} 个会话出现过 task_complete，说明不少会话能从分析走到明确收口，但仍有一部分停在探索阶段。",
         },
@@ -424,87 +427,87 @@ def _summarize_work_patterns(data, thread_details, totals):
     wins = []
     if patch_success >= max(3, total_sessions // 2):
         wins.append({
-            "title": "Codex 已经进入真实执行位",
+            "title": _I18N("Codex has entered real execution mode"),
             "detail": f"本周至少完成了 {patch_success} 次成功补丁写入，说明 Codex 不只是解释问题，而是在真实承担修改和落地工作。",
         })
     if full_auto > 0:
         wins.append({
-            "title": "你已经开始把它当代理用",
+            "title": _I18N("You have started using it as an agent"),
             "detail": f"{full_auto} 个会话运行在 `approval=never`，说明你已经在尝试把 Codex 放进可执行工作流，而不只是把它当问答界面。",
         })
     if len(commands) >= 4:
         wins.append({
-            "title": "命令链路足够像真实工程现场",
+            "title": _I18N("Command chains mirror real engineering workflows"),
             "detail": f"高频命令覆盖 {command_list}，说明这周的 Codex 会话确实在读代码、跑命令、收结果，而不是停留在抽象讨论。",
         })
     if task_complete >= max(2, total_sessions // 2):
         wins.append({
-            "title": "不少任务能真正收口",
+            "title": _I18N("Many tasks can truly reach closure"),
             "detail": f"记录到 {task_complete} 次 `task_complete` 事件，说明很多回合都能从分析进入明确收口，而不是一直停留在探索阶段。",
         })
 
     friction = []
     if aborted_turns > 0:
         friction.append({
-            "title": "错误路径会被你手动打断",
+            "title": _I18N("Error paths are manually interrupted"),
             "detail": f"本周出现 {aborted_turns} 次 `turn_aborted`。这通常意味着方向切换频繁，或者 Codex 在错误路径上走得太久才被你拦下来。",
         })
     if compactions > 0:
         friction.append({
-            "title": "长会话开始触碰上下文上限",
+            "title": _I18N("Long sessions start hitting context limits"),
             "detail": f"发生 {compactions} 次 `context_compacted`。一旦任务又长又碎，后续就容易出现上下文丢失、重复解释和返工。",
         })
     if web_searches > patch_success and web_searches >= 3:
         friction.append({
-            "title": "调研有时跑在落地前面",
+            "title": _I18N("Research sometimes outruns implementation"),
             "detail": f"外部检索 {web_searches} 次，但成功补丁只有 {patch_success} 次，说明一部分会话花在信息搜集或验证上，落地闭环还不够稳。",
         })
     if interactive > full_auto and interactive >= 3:
         friction.append({
-            "title": "人工确认仍然是主节奏",
+            "title": _I18N("Manual approval remains the main rhythm"),
             "detail": f"交互式会话 {interactive} 个，高于全自动 {full_auto} 个。很多动作仍然要靠人工确认，自动化收益还没完全吃到。",
         })
 
     features = [
         {
-            "title": "把稳定任务前置成固定工作流",
-            "detail": "对你已经反复做的任务，直接把顺序写成 inspect -> patch -> verify -> summarize，减少 Codex 自己猜流程的空间。",
+            "title": _I18N("Move stable tasks into fixed workflows"),
+            "detail": _I18N("For tasks done repeatedly, write the sequence as inspect→patch→verify→summarize to reduce Codex guessing the process."),
         },
         {
-            "title": "给高频工作流补持久上下文",
-            "detail": "把常用命令入口、测试路径、输出格式和禁区写进仓库指令里，能显著降低错误路径和重复探路。",
+            "title": _I18N("Add persistent context to high-frequency workflows"),
+            "detail": _I18N("Document common commands, test paths, output formats, and no-go zones in repo instructions to reduce wrong paths and repeated exploration."),
         },
         {
-            "title": "让验证成为默认结束动作",
-            "detail": "只要任务涉及修改，就默认追加 rerun/test/open-report，避免会话停在“我已经改了，你看一下”。",
+            "title": _I18N("Make verification the default closing action"),
+            "detail": _I18N("Whenever a task involves changes, default to appending rerun/test/open-report to avoid sessions ending at: I changed it, take a look."),
         },
     ]
     patterns = [
         {
-            "title": "你在用 Codex 做操作型工作，而不是纯分析型工作",
+            "title": _I18N("Operational work, not just analysis"),
             "summary": f"从 {tool_list} 和 {command_list} 的占比看，这周的主旋律是实际操作、局部修复和结果验证，不是泛泛讨论。",
         },
         {
-            "title": "强执行力已经有了，真正缺的是更强的起手约束",
-            "summary": "摩擦并不主要来自能力不够，而是来自起手时没有把输出形态、验证动作和停止条件钉死。",
+            "title": _I18N("Strong execution is there; what's missing is better upfront constraints"),
+            "summary": _I18N("Friction isn't from capability gaps but from not pinning down output format, verification, and stop conditions upfront."),
         },
         {
-            "title": "自动化潜力已经超过当前使用深度",
+            "title": _I18N("Automation potential exceeds current usage depth"),
             "summary": f"{dominant_mode} 说明你还在调试最佳协作边界；一旦把低风险任务迁进固定模板，吞吐会明显提升。",
         },
     ]
     horizon = [
         {
-            "title": "真正的一键修复闭环",
-            "detail": "下一步不是再写更长的提示词，而是让 Codex 接管 inspect -> patch -> rerun -> summarize 这条闭环，把你从中间协调者变成最后审批者。",
+            "title": _I18N("True one-click fix loop"),
+            "detail": _I18N("The next step is not longer prompts — let Codex own the inspect→patch→rerun→summarize loop, turning you from middle coordinator to final approver."),
         },
         {
-            "title": "按工作流而不是按项目积累周报记忆",
-            "detail": "你现在已经可以按 bug fix、报告生成、代码审查、批量改动这些行为模式追踪，而不必围着具体项目名打转。",
+            "title": _I18N("Build period memory by workflow, not by project"),
+            "detail": _I18N("You can now track by behavior patterns — bug fixes, report generation, code reviews, batch changes — rather than specific project names."),
         },
         {
-            "title": "把低风险操作推向全自动",
-            "detail": "像只读分析、批量检索、局部文本修订这类低风险任务，可以逐步迁到 approval=never，让人工只保留在关键改动和最终确认上。",
+            "title": _I18N("Push low-risk operations to full automation"),
+            "detail": _I18N("Low-risk tasks like read-only analysis, batch search, local text edits can gradually move to approval=never, leaving manual intervention only for key changes and final confirmation."),
         },
     ]
 
@@ -513,18 +516,18 @@ def _summarize_work_patterns(data, thread_details, totals):
             f"你这周对 Codex 的使用已经很明确地偏向真实执行，而不是把它当聊天工具。{patch_session_ratio}% 左右的会话带来了成功补丁，"
             f"再加上 {command_list} 这样的命令链路，说明它已经进入你的工程主流程。"
             if patch_success > 0 or sum(commands.values()) > 0
-            else "这周 Codex 使用量不高，更多像零散尝试，还没形成稳定工作流。"
+            else "Codex usage is light this period — more scattered attempts than a stable workflow."
         ),
         "hindering": (
             f"真正拖慢节奏的不是能力上限，而是执行前半段的形状不够稳定。{friction_events} 个摩擦事件里，最典型的是中断和上下文压缩，说明会话经常在路径选择阶段消耗过多精力。"
             if friction_events
-            else "这周没有明显的中断或上下文压力，主要缺口不是摩擦，而是还能把更多稳定任务推进成固定流程。"
+            else "No significant interruptions or context pressure this period — the gap is moving more stable tasks into fixed workflows rather than friction."
         ),
         "quick_win": (
-            "最直接的提升是把目标、输出形式和验证动作写得更像操作说明，而不是任务描述。你已经证明 Codex 会执行，下一步是让它少猜。"
+            _I18N("The most direct improvement: write goals, output format, and verification like operation specs, not task descriptions. Codex can execute — now make it guess less.")
         ),
         "ambitious": (
-            f"你已经站在从“辅助编码”过渡到“受控代理”的门槛上。{dominant_mode} 只是当前阶段，下一步应该是把低风险任务成批迁进自动闭环，让人工只负责审批关键节点。"
+            f"You’re at the threshold from assisted coding to managed agent. {dominant_mode} is just the current phase; next: batch low-risk tasks into automated loops, leaving only key checkpoints for manual approval."
         ),
     }
 
@@ -533,7 +536,7 @@ def _summarize_work_patterns(data, thread_details, totals):
         f"这套工作流的核心是工具和命令。高频工具集中在 {tool_list}，高频命令集中在 {command_list}，再叠加 +{lines_added}/-{lines_removed} 行代码变更，说明你让 Codex 参与的是具备真实后果的工程动作，而不是停留在建议层面。",
         f"真正的问题出现在流程前半段。{aborted_turns} 次中断、{compactions} 次上下文压缩、{web_searches} 次外部检索，都说明 Codex 在探索和收敛之间仍有摩擦。换句话说，它已经足够能干，但离稳定省心还差一层工作流约束。",
     ]
-    key_insight = "Codex 对你已经不是“能不能做”的问题，而是“能不能在更少人工纠偏下持续做对”的问题。"
+    key_insight = _I18N("For you, Codex is no longer about capability but about consistency with less manual correction.")
 
     return {
         "at_a_glance": at_a_glance,
@@ -871,8 +874,8 @@ def generate_html(data, out_path):
       <div class="hero-grid">
         <div>
           <div class="glance-title">At a Glance</div>
-          <div class="glance-item"><strong>What's working:</strong> {_safe_text(insights['at_a_glance']['working'])}</div>
-          <div class="glance-item"><strong>What's hindering you:</strong> {_safe_text(insights['at_a_glance']['hindering'])}</div>
+          <div class="glance-item"><strong>"What's working":</strong> {_safe_text(insights['at_a_glance']['working'])}</div>
+          <div class="glance-item"><strong>"What's hindering you":</strong> {_safe_text(insights['at_a_glance']['hindering'])}</div>
           <div class="glance-item"><strong>Quick wins to try:</strong> {_safe_text(insights['at_a_glance']['quick_win'])}</div>
           <div class="glance-item"><strong>On the horizon:</strong> {_safe_text(insights['at_a_glance']['ambitious'])}</div>
         </div>
@@ -888,18 +891,18 @@ def generate_html(data, out_path):
     <div class="stats-row">
 """]
 
-    html_parts.append(_render_stat(total_sessions, "会话数"))
-    html_parts.append(_render_stat(total_messages, "用户消息"))
-    html_parts.append(_render_stat(_format_tokens(total_tokens), "上下文 Token"))
-    html_parts.append(_render_stat(f"+{lines_added}/-{lines_removed}", "代码行"))
-    html_parts.append(_render_stat(active_days, "活跃天数"))
-    html_parts.append(_render_stat(full_auto, "全自动会话"))
-    html_parts.append(_render_stat(interactive, "交互式会话"))
-    html_parts.append(_render_stat(patch_files, "改动文件"))
+    html_parts.append(_render_stat(total_sessions, _I18N("Sessions")))
+    html_parts.append(_render_stat(total_messages, _I18N("Messages")))
+    html_parts.append(_render_stat(_format_tokens(total_tokens), _I18N("Context Tokens")))
+    html_parts.append(_render_stat(f"+{lines_added}/-{lines_removed}", _I18N("Code Lines")))
+    html_parts.append(_render_stat(active_days, _I18N("Active Days")))
+    html_parts.append(_render_stat(full_auto, _I18N("Fully Automated Sessions")))
+    html_parts.append(_render_stat(interactive, _I18N("Interactive Sessions")))
+    html_parts.append(_render_stat(patch_files, _I18N("Files Changed")))
     html_parts.append("""    </div>\n""")
 
     html_parts.append("""    <h2>What You Work On</h2>
-    <p class="section-intro">这里不展示具体项目名，只抽象出本周最稳定的几条工作流，看你把 Codex 用在什么类型的事情上。</p>
+    <p class="section-intro">Abstracting stable workflows rather than project names — showing what types of work you use Codex for.</p>
     <div class="project-areas">
 """)
     if insights["work_on"]:
@@ -915,7 +918,7 @@ def generate_html(data, out_path):
 """
             )
     else:
-        html_parts.append('      <p class="empty">本周暂无可用项目数据。</p>\n')
+        html_parts.append('      <p class="empty">No project data available for this period.</p>\n')
     html_parts.append("    </div>\n")
 
     html_parts.append("""    <h2>How You Use Codex</h2>
@@ -945,7 +948,7 @@ def generate_html(data, out_path):
     if data["models"]:
         max_model = max(_safe_int(r["cnt"]) for r in data["models"]) or 1
         html_parts.append("""      <div class="chart-card">
-        <div class="chart-title">模型分布</div>
+        html_parts.append('      <div class="chart-title">Model Distribution</div>\n')
 """)
         for r in data["models"]:
             model_name = r["model"] or "default"
@@ -961,43 +964,43 @@ def generate_html(data, out_path):
             )
         html_parts.append("      </div>\n")
     else:
-        html_parts.append("""      <div class="chart-card"><div class="chart-title">模型分布</div><p class="empty">本周没有模型统计。</p></div>\n""")
+        html_parts.append('      <p class="empty">No model statistics for this period.</p>\n')
 
     if data["daily"]:
         max_daily = max(_safe_int(r["sessions"]) for r in data["daily"]) or 1
         html_parts.append("""      <div class="chart-card">
-        <div class="chart-title">每日会话数</div>
+        html_parts.append('      <div class="chart-title">Daily Sessions</div>\n')
 """)
         html_parts.append(_render_bar_rows(data["daily"], "day", "sessions", max_daily))
         html_parts.append("\n      </div>\n")
     else:
-        html_parts.append("""      <div class="chart-card"><div class="chart-title">每日会话数</div><p class="empty">本周没有每日数据。</p></div>\n""")
+        html_parts.append('      <p class="empty">No daily data for this period.</p>\n')
     html_parts.append("    </div>\n")
 
     html_parts.append('    <div class="charts-row">\n')
     if insights["top_tools"]:
         max_tool = max(item["count"] for item in insights["top_tools"]) or 1
         html_parts.append("""      <div class="chart-card">
-        <div class="chart-title">高频工具</div>
+        html_parts.append('      <div class="chart-title">Top Tools</div>\n')
 """)
         html_parts.append(_render_bar_rows(insights["top_tools"], "name", "count", max_tool, "x"))
         html_parts.append("\n      </div>\n")
     else:
-        html_parts.append("""      <div class="chart-card"><div class="chart-title">高频工具</div><p class="empty">没有解析到工具调用。</p></div>\n""")
+        html_parts.append('      <p class="empty">No tool calls detected.</p>\n')
 
     if insights["top_commands"]:
         max_command = max(item["count"] for item in insights["top_commands"]) or 1
         html_parts.append("""      <div class="chart-card">
-        <div class="chart-title">高频命令</div>
+        html_parts.append('      <div class="chart-title">Top Commands</div>\n')
 """)
         html_parts.append(_render_bar_rows(insights["top_commands"], "name", "count", max_command, "x"))
         html_parts.append("\n      </div>\n")
     else:
-        html_parts.append("""      <div class="chart-card"><div class="chart-title">高频命令</div><p class="empty">没有解析到命令执行。</p></div>\n""")
+        html_parts.append('      <p class="empty">No command execution detected.</p>\n')
     html_parts.append("    </div>\n")
 
     html_parts.append("""    <h2>Impressive Things You Did</h2>
-    <p class="section-intro">这些结论都尽量落在真实 rollout 事件和执行痕迹上，不拿空洞描述充数。</p>
+    <p class="section-intro">All conclusions are grounded in real rollout events and execution traces — no filler.</p>
     <div class="cards">
 """)
     if insights["wins"]:
@@ -1014,7 +1017,7 @@ def generate_html(data, out_path):
     html_parts.append("    </div>\n")
 
     html_parts.append("""    <h2>Where Things Go Wrong</h2>
-    <p class="section-intro">重点看真正会让效率下滑的摩擦：错误路径、中断、上下文压力，以及调研和落地之间的失衡。</p>
+    <p class="section-intro">Focusing on friction that genuinely hurts efficiency: wrong paths, interruptions, context pressure, and the gap between research and implementation.</p>
     <div class="cards">
 """)
     if insights["friction"]:
@@ -1031,7 +1034,7 @@ def generate_html(data, out_path):
     html_parts.append("    </div>\n")
 
     html_parts.append("""    <h2>Features to Try</h2>
-    <p class="section-intro">这里不是泛泛建议，而是最适合你当前使用阶段的几个直接改进点。</p>
+    <p class="section-intro">Not generic advice — the most relevant improvements for your current usage phase.</p>
     <div class="cards">
 """)
     for item in insights["features"]:
@@ -1045,7 +1048,7 @@ def generate_html(data, out_path):
     html_parts.append("    </div>\n")
 
     html_parts.append("""    <h2>New Ways to Use Codex</h2>
-    <p class="section-intro">这些是从本周行为模式里抽出来的工作方式，不是跟任何具体项目绑定的建议。</p>
+    <p class="section-intro">Behavior pattern insights derived from this period — not tied to any specific project.</p>
     <div class="cards">
 """)
     for item in insights["patterns"]:
@@ -1059,7 +1062,7 @@ def generate_html(data, out_path):
     html_parts.append("    </div>\n")
 
     html_parts.append("""    <h2>On the Horizon</h2>
-    <p class="section-intro">这部分看的是你当前使用方式已经指向的下一阶段，而不是遥远幻想。</p>
+    <p class="section-intro">The next stage your current usage already points toward — not distant fantasies.</p>
     <div class="cards">
 """)
     for item in insights["horizon"]:
