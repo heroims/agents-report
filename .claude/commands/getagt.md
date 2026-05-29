@@ -18,8 +18,10 @@ allowed-tools: Bash, Read, Glob
    ./getagt --period annual     # 年报
    ```
 
+   **语言选择**：根据用户提问语言自动传递 `--lang` 参数（中文提问 → `--lang zh`，英文提问 → `--lang en`）。
+
 2. **确认输出**：脚本自动完成：
-   - 生成 Claude Code insights 报告
+   - 生成 Claude Code insights 报告（中文模式下自动翻译 Claude 内容）
    - 采集 Codex/OpenCode/Cursor/Trae/OpenClaw/Hermes 数据（可选，失败不阻断）
    - 合并报告并按 `reports/{period}/{group}/{name}-{period}-report.html` 归档
    - 若设置了 `AGENTS_REPORT_URL` 则 HTTP PUT 上传到 dashboard，否则 git pull --rebase && git add/commit/push

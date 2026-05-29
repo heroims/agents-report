@@ -27,6 +27,9 @@
 # 不设置时：getagt 通过 git pull --rebase && git add/commit/push 归档，analyzeagt 本地生成团队报告
 export AGENTS_REPORT_URL=http://localhost:8880
 
+# 报告语言 —— zh（中文，默认）或 en（英文）
+export AGENTS_REPORT_LANG=zh
+
 # Dashboard 监听端口（仅 Dashboard 使用）
 export DASHBOARD_PORT=8880
 
@@ -65,15 +68,19 @@ export AI_MODEL=gpt-4o
 ./getagt --period monthly       # 月报
 ./getagt --period quarterly     # 季报
 ./getagt --period annual        # 年报
+./getagt --lang en              # 英文周报
+./getagt --period monthly --lang en  # 英文月报
 ```
 
 `./getagt` 是 shell wrapper，等价于 `python3 scripts/getagt.py [args]`。Windows 下可直接运行 `python scripts\getagt.py`。
+
+通过 `--lang zh|en` 显式指定语言，或设置 `AGENTS_REPORT_LANG` 环境变量（`zh`/`en`），未设置时默认中文。
 
 ### 自动流程
 
 1. 通过 `git config user.name` 识别成员标识（slug 化后作为文件名前缀）
 2. 从 [`scripts/members.json`](scripts/members.json) 查找所属分组（key 为分组名，value 为成员列表；未匹配的默认为 `group`）
-3. 调用 `scripts/generate_insights_from_stats.py` 生成 Claude Code insights 报告
+3. 调用 `scripts/generate_insights_from_stats.py` 生成 Claude Code insights 报告（中文模式下自动翻译 Claude 内容）
 4. 依次采集 Codex / OpenCode / Cursor / Trae / OpenClaw / Hermes 数据（可选数据源，任一失败不阻断主流程）
 5. 采集本机环境信息（JDK 版本、网络接口 IP）
 6. 通过 `scripts/merge_reports.py` 合并为单一 HTML
@@ -97,9 +104,17 @@ export AI_MODEL=gpt-4o
 ./analyzeagt --period monthly       # 月报
 ./analyzeagt --period quarterly     # 季报
 ./analyzeagt --period annual        # 年报
+./analyzeagt --lang en              # 英文周报
+./analyzeagt --period monthly --lang en  # 英文月报
 ```
 
 等价于 `python3 scripts/analyze.py [args]`。
+
+通过 `--lang zh|en` 显式指定语言，或设置 `AGENTS_REPORT_LANG` 环境变量。也可通过 Dashboard API 触发服务端分析：
+
+```bash
+curl -X POST 'http://localhost:8880/api/analyze?period_type=weekly&lang=zh'
+```
 
 ### 自动流程
 
@@ -125,6 +140,8 @@ export AI_MODEL=gpt-4o
 /setup-schedule      # 一键创建周报+月报+季报+年报四个定时任务
 /teardown-schedule    # 暂停或删除所有已创建的定时上报任务
 ```
+
+`/teardown-schedule` 会扫描已有的自动化任务，按名称匹配（"提交个人周报" / "提交个人月报" / "提交个人季报" / "提交个人年报"），先暂停再询问是否完全删除。
 
 - Codex：指令由 [`.agents/skills/source-command-setup-schedule/SKILL.md`](.agents/skills/source-command-setup-schedule/SKILL.md) 驱动
 - Claude Code：指令由 [`.claude/commands/setup-schedule.md`](.claude/commands/setup-schedule.md) 驱动，含自动回退逻辑

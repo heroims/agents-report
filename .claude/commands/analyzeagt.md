@@ -18,6 +18,8 @@ allowed-tools: Bash, Read, Glob
    python3 scripts/analyze.py --period annual     # 年报
    ```
 
+   **语言选择**：根据用户提问语言自动传递 `--lang` 参数（中文提问 → `--lang zh`，英文提问 → `--lang en`）。
+
 2. **执行逻辑**：
    - 若设置了 `AGENTS_REPORT_URL`：通过 `POST /api/analyze` 委托 Dashboard 在服务端执行分析
    - 未设置时：本地遍历 `reports/`，聚合生成并存储团队报告

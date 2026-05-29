@@ -21,9 +21,9 @@ python3 scripts/analyze.py --period monthly --lang en  # 英文月报
 ```
 
 **语言选择**：
+- 根据用户提问语言自动传递 `--lang` 参数（中文提问 → `--lang zh`，英文提问 → `--lang en`）
 - 默认根据 `AGENTS_REPORT_LANG` 环境变量（`zh`/`en`），未设置时默认中文
 - 通过 `--lang zh|en` 显式指定
-- 代理调用时：根据用户提问语言自动传递 `--lang` 参数（中文提问 → `--lang zh`，英文提问 → `--lang en`）
 
 ## 自动流程
 
