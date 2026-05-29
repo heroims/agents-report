@@ -15,6 +15,15 @@ _scripts_dir = str((__import__('pathlib').Path(__file__).resolve().parent))
 if _scripts_dir not in _sys.path:
     _sys.path.insert(0, _scripts_dir)
 from period_utils import detect_period_type, parse_filename, period_label as plabel, period_sort_key, period_type_arg, current_period, period_start_end
+from i18n import T as _I18nT
+_LANG = _I18nT.detect()
+_I18N = _I18nT(_LANG)
+
+def set_lang(lang):
+    global _LANG, _I18N
+    _LANG = lang
+    _I18N = _I18nT(lang)
+
 
 
 class InsightsParser(HTMLParser):
@@ -925,6 +934,19 @@ def generate_team_report(reports_dir, output_dir, members_path, period=None):
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(html)
 
+    # Post-process language translation
+    if _LANG == "en":
+        from i18n import _ZH_MAP
+        _en_map = {v: k for k, v in _ZH_MAP.items() if len(v) > 1}
+        # Also add reverse CN_MAP
+        _en_map.update({v: k for k, v in _CN_MAP.items() if len(v) > 1})
+        with open(output_path, "r", encoding="utf-8") as rf:
+            translated = rf.read()
+        for zh_phrase, en_phrase in sorted(_en_map.items(), key=lambda x: -len(x[0])):
+            translated = translated.replace(zh_phrase, en_phrase)
+        with open(output_path, "w", encoding="utf-8") as wf:
+            wf.write(translated)
+
     # 若设置了 AGENTS_REPORT_URL，上传团队报告并刷新缓存
     report_url = os.environ.get("AGENTS_REPORT_URL", "").strip()
     if report_url:
@@ -932,7 +954,7 @@ def generate_team_report(reports_dir, output_dir, members_path, period=None):
         base = report_url.rstrip("/")
         # 上传报告文件
         target = f"{base}/api/report/upload?name=team&period={latest_period}&group=team"
-        req = urllib.request.Request(target, data=html.encode("utf-8"), method="PUT")
+        req = urllib.request.Request(target, data=open(output_path, "rb").read(), method="PUT")
         req.add_header("Content-Type", "text/html")
         try:
             urllib.request.urlopen(req, timeout=30)
@@ -1717,6 +1739,20 @@ _CN_MAP = {
 
 
 def _cn(s):
+    """Bilingual translation. zh: EN->CN via CN_MAP+i18n. en: any->EN via i18n+reverse CN_MAP."""
+    if _LANG == "en":
+        # Reverse: try i18n first, then reverse CN_MAP
+        result = _I18N(s)
+        if result != s:
+            return result
+        # Build reverse lookup once
+        _cn._reverse = getattr(_cn, '_reverse', None) or {v: k for k, v in _CN_MAP.items()}
+        _cn._reverse = _cn._reverse or {v: k for k, v in _CN_MAP.items()}
+        return _cn._reverse.get(s, s)
+    # zh mode: i18n first, then CN_MAP
+    result = _I18N(s)
+    if result != s:
+        return result
     return _CN_MAP.get(s, s)
 
 

@@ -956,10 +956,10 @@ tr.rpt:hover .click-hint { opacity: 1; }
       <div class="wk-btn" id="wk-btn" onclick="toggleWeekDrop()">—</div>
       <div class="wk-menu" id="wk-menu"></div>
     </div>
-    <button class="btn btn-ghost" id="btn-team" onclick="openTeamReport()" style="display:none">&#128202; 团队</button>
-    <button class="btn btn-ghost" id="refresh-btn" onclick="doRefresh()">&#8634; <span id="refresh-lbl">刷新</span></button>
+    <button class="btn btn-ghost" id="btn-team" onclick="openTeamReport()" style="display:none" data-i18n="nav_team">📊 团队</button>
+    <button class="btn btn-ghost" id="refresh-btn" onclick="doRefresh()">↻ <span id="refresh-lbl" data-i18n="refresh">刷新</span></button>
     <button class="btn btn-ghost" id="btn-lang" onclick="toggleLang()">EN</button>
-    <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="切换主题">☀</button>
+    <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" data-i18n-title="theme_toggle" title="切换主题">☀</button>
   </div>
 </nav>
 
@@ -979,7 +979,7 @@ tr.rpt:hover .click-hint { opacity: 1; }
 <div class="ai-strip" id="ai-strip" style="display:none">
   <div class="ai-strip-icon">✦</div>
   <div style="flex:1;min-width:0">
-    <div class="ai-strip-label">AI 周报摘要</div>
+    <div class="ai-strip-label" data-i18n="ai_weekly_summary">AI 周报摘要</div>
     <div class="ai-strip-text" id="ai-strip-text"><span class="skel" style="display:inline-block;width:60%;height:12px"></span></div>
   </div>
 </div>
@@ -987,8 +987,8 @@ tr.rpt:hover .click-hint { opacity: 1; }
 <!-- Table -->
 <div class="table-shell">
   <div class="table-toolbar">
-    <input class="search" id="search" type="text" placeholder="搜索成员…" oninput="onSearch(this.value)">
-    <div class="tbl-hint"><div class="hint-dot"></div>点击成员查看完整报告</div>
+    <input class="search" id="search" type="text" data-i18n-placeholder="search_placeholder" placeholder="搜索成员…" oninput="onSearch(this.value)">
+    <div class="tbl-hint"><div class="hint-dot"></div><span data-i18n="tbl_hint">点击成员查看完整报告</span></div>
     <div class="tbl-meta" id="tbl-meta"></div>
   </div>
   <div class="tbl-scroll">
@@ -1021,7 +1021,7 @@ tr.rpt:hover .click-hint { opacity: 1; }
     <button class="btn-close" onclick="closeDrawer()">✕</button>
   </div>
   <div class="drawer-body">
-    <div class="drawer-loading" id="drawer-loading"><div class="spin"></div><span>加载报告中…</span></div>
+    <div class="drawer-loading" id="drawer-loading"><div class="spin"></div><span data-i18n="loading">加载报告中…</span></div>
     <iframe class="drawer-frame" id="drawer-frame" onload="onFrameLoad()"></iframe>
   </div>
 </div>
@@ -1036,14 +1036,14 @@ tr.rpt:hover .click-hint { opacity: 1; }
   <div class="ai-panel-hd">
     <div class="ai-panel-logo">✦</div>
     <div style="flex:1">
-      <div class="ai-panel-title">AI 数据助手</div>
-      <div class="ai-panel-sub"><div class="ai-online-dot"></div>在线</div>
+      <div class="ai-panel-title" data-i18n="ai_assistant">AI 数据助手</div>
+      <div class="ai-panel-sub"><div class="ai-online-dot"></div><span data-i18n="online">在线</span></div>
     </div>
     <button class="ai-panel-close" onclick="toggleChat()">✕</button>
   </div>
   <div class="ai-msgs" id="ai-msgs"></div>
   <div class="ai-panel-input">
-    <textarea class="ai-text-input" id="ai-input" placeholder="询问本周数据…"
+    <textarea class="ai-text-input" id="ai-input" data-i18n-placeholder="ai_placeholder" placeholder="询问本周数据…"
       onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat()}"></textarea>
     <button class="ai-send-btn" id="ai-send" onclick="sendChat()">↑</button>
   </div>
@@ -1051,8 +1051,48 @@ tr.rpt:hover .click-hint { opacity: 1; }
 
 <script>
 const DICT={
-  zh:{col_member:'成员',col_msg:'对话数',col_lines:'新增行',col_files:'文件数',col_days:'活跃天',col_msgs_day:'日均对话',col_cost:'费用',col_delta:'周变化',all:'全部',no_report:'未提交',no_data:'本周暂无数据'},
-  en:{col_member:'Member',col_msg:'Messages',col_lines:'Lines',col_files:'Files',col_days:'Active Days',col_msgs_day:'Msgs/Day',col_cost:'Cost',col_delta:'Change',all:'All',no_report:'No report',no_data:'No data'},
+  zh:{
+    col_member:'成员',col_msg:'对话数',col_lines:'新增行',col_files:'文件数',col_days:'活跃天',col_msgs_day:'日均对话',col_cost:'费用',col_delta:'周变化',
+    all:'全部',no_report:'未提交',no_data:'本周暂无数据',
+    nav_team:'📊 团队',refresh:'↻ 刷新',theme_toggle:'切换主题',
+    ai_weekly_summary:'AI 周报摘要',search_placeholder:'搜索成员…',tbl_hint:'点击成员查看完整报告',
+    loading:'加载报告中…',ai_assistant:'AI 数据助手',online:'在线',ai_placeholder:'询问本周数据…',
+    just_now:'刚刚',minutes_ago:'分钟前',hours_ago:'小时前',updated_at:'更新于 ',
+    generating_summary:'正在生成摘要，请稍候…',generating_summary_short:'正在生成摘要…',
+    ai_summary_failed:'AI 摘要请求失败：',network_error:'网络错误',
+    period_weekly:'周',period_monthly:'月',period_quarterly:'季',period_annual:'年',
+    stat_msgs:'对话数',stat_lines:'新增代码行',stat_coverage:'提交覆盖率',stat_files:'涉及文件',stat_cost:'本周费用',
+    people_unit:'人',view_report:'↗ 查看报告',team_report:'团队报告 · ',
+    syncing:'同步中',sync_done:'✓ 完成',failed:'失败',refresh_failed:'刷新失败: ',
+    msg_count:'条对话',line_count:'行',
+    rpt_messages:'对话数',rpt_lines:'代码行',rpt_files:'文件数',rpt_days:'活跃天',rpt_msgs_day:'日均对话',
+    rpt_work_on:'工作内容分布',rpt_usage:'使用方式分析',
+    rpt_highlights:'亮点成就',rpt_glance:'数据一览',rpt_insights:'AI 代码数据报告',
+    rpt_sessions:'会话数',rpt_top:'主要',rpt_activity:'活动',
+    weekly_data_summary:'本周数据摘要',can_continue_asking:'可以继续提问 👇',
+    error_retry:'[出错了，请重试]',lang_btn:'EN',
+  },
+  en:{
+    col_member:'Member',col_msg:'Messages',col_lines:'Lines',col_files:'Files',col_days:'Active Days',col_msgs_day:'Msgs/Day',col_cost:'Cost',col_delta:'Change',
+    all:'All',no_report:'No report',no_data:'No data this week',
+    nav_team:'📊 Team',refresh:'↻ Refresh',theme_toggle:'Toggle Theme',
+    ai_weekly_summary:'AI Weekly Summary',search_placeholder:'Search members…',tbl_hint:'Click a member to view full report',
+    loading:'Loading report…',ai_assistant:'AI Data Assistant',online:'Online',ai_placeholder:"Ask about this week's data…",
+    just_now:'just now',minutes_ago:'m ago',hours_ago:'h ago',updated_at:'Updated ',
+    generating_summary:'Generating summary…',generating_summary_short:'Generating summary…',
+    ai_summary_failed:'AI summary failed: ',network_error:'Network error',
+    period_weekly:'W',period_monthly:'M',period_quarterly:'Q',period_annual:'Y',
+    stat_msgs:'Messages',stat_lines:'New Lines',stat_coverage:'Coverage',stat_files:'Files',stat_cost:'Weekly Cost',
+    people_unit:' people',view_report:'↗ View Report',team_report:'Team Report · ',
+    syncing:'Syncing…',sync_done:'✓ Done',failed:'Failed',refresh_failed:'Refresh failed: ',
+    msg_count:' msgs',line_count:' lines',
+    rpt_messages:'Messages',rpt_lines:'Lines',rpt_files:'Files',rpt_days:'Active Days',rpt_msgs_day:'Msgs/Day',
+    rpt_work_on:'What You Work On',rpt_usage:'How You Use Claude Code',
+    rpt_highlights:'Impressive Things You Did',rpt_glance:'At a Glance',rpt_insights:'AI Code Insights',
+    rpt_sessions:'Sessions',rpt_top:'Top',rpt_activity:'Activity',
+    weekly_data_summary:'Weekly Data Summary',can_continue_asking:'Ask follow-up questions 👇',
+    error_retry:'[Error, please retry]',lang_btn:'中文',
+  },
 };
 const S={group:null,period:null,periodType:'weekly',lang:'zh',col:'messages',dir:1,q:'',data:null,chatOpen:false,summaryLoaded:false,cachedSummary:null,reportLang:'en'};
 const MEM={};
@@ -1060,9 +1100,11 @@ const t=k=>(DICT[S.lang]||DICT.zh)[k]||k;
 
 function setLang(l){
   S.lang=l;
-  document.getElementById('btn-lang').textContent=l==='zh'?'EN':'中';
+  document.getElementById('btn-lang').textContent=t('lang_btn');
   document.querySelectorAll('[data-i18n]').forEach(el=>el.textContent=t(el.dataset.i18n));
-  if(S.data) renderTable(S.data.members);
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>el.placeholder=t(el.dataset.i18nPlaceholder));
+  document.querySelectorAll('[data-i18n-title]').forEach(el=>el.title=t(el.dataset.i18nTitle));
+  if(S.data) render(S.data);
 }
 function toggleLang(){setLang(S.lang==='zh'?'en':'zh')}
 
@@ -1102,8 +1144,8 @@ function render(d){
   renderTabs(d);renderPeriods(d);renderStats(d);renderTable(d.members);
   if(d.last_updated){
     const diff=Math.floor((Date.now()-new Date(d.last_updated))/1000);
-    const rel=diff<60?'刚刚':diff<3600?Math.floor(diff/60)+'分钟前':diff<86400?Math.floor(diff/3600)+'小时前':new Date(d.last_updated).toLocaleDateString('zh',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
-    document.getElementById('tbl-meta').textContent='更新于 '+rel;
+    const rel=diff<60?t('just_now'):diff<3600?Math.floor(diff/60)+t('minutes_ago'):diff<86400?Math.floor(diff/3600)+t('hours_ago'):new Date(d.last_updated).toLocaleDateString(S.lang,{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+    document.getElementById('tbl-meta').textContent=t('updated_at')+rel;
   }
   renderAiStrip(d);
 }
@@ -1112,7 +1154,7 @@ async function renderAiStrip(d){
   const strip=document.getElementById('ai-strip');
   const txt=document.getElementById('ai-strip-text');
   strip.style.display='flex';
-  txt.textContent='正在生成摘要，请稍候…';
+  txt.textContent=t('generating_summary');
   S.summaryLoaded=false;
   try{
     const r=await fetch('/api/ai/summary',{
@@ -1129,7 +1171,7 @@ async function renderAiStrip(d){
       if(!S.chatOpen) document.getElementById('ai-badge').classList.add('on');
     }
   }catch(e){
-    txt.textContent='AI 摘要请求失败：' + (e&&e.message||'网络错误');
+    txt.textContent=t('ai_summary_failed') + (e&&e.message||t('network_error'));
   }
 }
 
@@ -1138,7 +1180,7 @@ function renderTabs(d){
     `<button class="nav-tab${(S.group||'all')===g?' active':''}" onclick="switchGroup('${g}')">${g==='all'?t('all'):g.toUpperCase()}</button>`
   ).join('');
   var types=d.period_types||['weekly'];
-  var labels={weekly:'周',monthly:'月',quarterly:'季',annual:'年'};
+  var labels={weekly:t('period_weekly'),monthly:t('period_monthly'),quarterly:t('period_quarterly'),annual:t('period_annual')};
   document.getElementById('nav-period-type').innerHTML=types.map(function(t){
     return '<button class="nav-pt-btn'+(S.periodType===t?' active':'')+'" onclick="switchPeriodType(\''+t+'\')">'+(labels[t]||t)+'</button>';
   }).join('');
@@ -1179,11 +1221,11 @@ function renderStats(d){
   }
   const costVal=T.cost>0?`$${T.cost.toFixed(1)}`:null;
   document.getElementById('stats-row').innerHTML=`
-    <div class="stat"><div class="stat-val">${(T.messages||0).toLocaleString()}</div><div class="stat-lbl">对话数 ${pctSpan(T.delta_messages,T.messages)}</div></div>
-    <div class="stat"><div class="stat-val">${(T.lines_added||0).toLocaleString()}</div><div class="stat-lbl">新增代码行 ${pctSpan(T.delta_lines_added,T.lines_added)}</div></div>
-    <div class="stat"><div class="stat-val" style="color:${ccol}">${cpct}%</div><div class="stat-lbl">提交覆盖率 <span style="color:var(--text3);font-weight:400">${T.reported||0}/${T.expected||0}人</span></div></div>
-    <div class="stat"><div class="stat-val">${(T.files||0).toLocaleString()}</div><div class="stat-lbl">涉及文件 ${pctSpan(T.delta_files,T.files)}</div></div>
-    ${costVal!=null?`<div class="stat"><div class="stat-val">${costVal}</div><div class="stat-lbl">本周费用</div></div>`:''}`;
+    <div class="stat"><div class="stat-val">${(T.messages||0).toLocaleString()}</div><div class="stat-lbl">${t('stat_msgs')} ${pctSpan(T.delta_messages,T.messages)}</div></div>
+    <div class="stat"><div class="stat-val">${(T.lines_added||0).toLocaleString()}</div><div class="stat-lbl">${t('stat_lines')} ${pctSpan(T.delta_lines_added,T.lines_added)}</div></div>
+    <div class="stat"><div class="stat-val" style="color:${ccol}">${cpct}%</div><div class="stat-lbl">${t('stat_coverage')} <span style="color:var(--text3);font-weight:400">${T.reported||0}/${T.expected||0}${t('people_unit')}</span></div></div>
+    <div class="stat"><div class="stat-val">${(T.files||0).toLocaleString()}</div><div class="stat-lbl">${t('stat_files')} ${pctSpan(T.delta_files,T.files)}</div></div>
+    ${costVal!=null?`<div class="stat"><div class="stat-val">${costVal}</div><div class="stat-lbl">${t('stat_cost')}</div></div>`:''}`;
 }
 
 // ── Table ──────────────────────────────────────────
@@ -1215,7 +1257,7 @@ function renderTable(members){
     const rowAttr=m.reported?`class="rpt" data-name="${m.name}" onclick="rowClick(this)"` :`class="nrpt"`;
     const rankSpan=`<span class="rank-num" style="${m.reported?'':'color:var(--text3);opacity:.5'}">${rank}</span>`;
     const nameCell=m.reported
-      ?`${rankSpan}${m.display}<span class="click-hint">↗ 查看报告</span>`
+      ?`${rankSpan}${m.display}<span class="click-hint">${t('view_report')}</span>`
       :`${rankSpan}${m.display}<span class="badge-miss">${t('no_report')}</span>`;
     const msgsDay=Number(m.msgs_day||0).toLocaleString(undefined,{maximumFractionDigits:1});
     return `<tr ${rowAttr}><td>${nameCell}</td><td>${m.reported?m.messages.toLocaleString():'—'}</td><td>${m.reported?m.lines_added.toLocaleString():'—'}</td><td>${m.reported?m.files:'—'}</td><td>${m.reported?(m.days||0):'—'}</td><td>${m.reported?msgsDay:'—'}</td><td>${dHtml}</td></tr>`;
@@ -1232,8 +1274,8 @@ function openTeamReport(){
   var period=S.data?.current_period;
   if(!period) return;
   document.getElementById('drawer-avatar').textContent='📊';
-  document.getElementById('drawer-title').textContent='团队报告 · '+period;
-  document.getElementById('drawer-sub').textContent='Claude Code Team Report';
+  document.getElementById('drawer-title').textContent=t('team_report')+period;
+  document.getElementById('drawer-sub').textContent='Team Report';
   var frame=document.getElementById('drawer-frame');
   frame.style.display='none';frame.src='';
   document.getElementById('drawer-loading').style.display='flex';
@@ -1247,17 +1289,17 @@ function openTeamReport(){
 async function doRefresh(){
   const b=document.getElementById('refresh-btn');
   const lbl=document.getElementById('refresh-lbl');
-  b.disabled=true;lbl.textContent='同步中';
+  b.disabled=true;lbl.textContent=t('syncing');
   try{
     const r=await fetch('/api/refresh',{method:'POST'});
     if(!r.ok) throw new Error('HTTP '+r.status);
     await load();
-    lbl.textContent='✓ 完成';
-    setTimeout(()=>{lbl.textContent='刷新';b.disabled=false},1800);
+    lbl.textContent=t('sync_done');
+    setTimeout(()=>{lbl.textContent=t('refresh');b.disabled=false},1800);
   }catch(e){
-    lbl.textContent='失败';
-    showErr('刷新失败: '+e.message);
-    setTimeout(()=>{lbl.textContent='刷新';b.disabled=false},2000);
+    lbl.textContent=t('failed');
+    showErr(t('refresh_failed')+e.message);
+    setTimeout(()=>{lbl.textContent=t('refresh');b.disabled=false},2000);
   }
 }
 
@@ -1266,7 +1308,7 @@ function openDrawer(m){
   var period=S.data?.current_period||'';
   document.getElementById('drawer-avatar').textContent=(m.display||'?').charAt(0).toUpperCase();
   document.getElementById('drawer-title').textContent=m.display;
-  document.getElementById('drawer-sub').textContent=`${(m.group||'').toUpperCase()} · ${period} · ${m.messages.toLocaleString()} 条对话 · ${m.lines_added.toLocaleString()} 行`;
+  document.getElementById('drawer-sub').textContent=`${(m.group||'').toUpperCase()} · ${period} · ${m.messages.toLocaleString()}${t('msg_count')} · ${m.lines_added.toLocaleString()}${t('line_count')}`;
   var frame=document.getElementById('drawer-frame');
   frame.style.display='none';
   document.getElementById('drawer-loading').style.display='flex';
@@ -1295,11 +1337,11 @@ function openReportNewTab(){
 
 // ── Report translation ─────────────────────────────────────────────────────────
 const TRANS_EN2CN={
-  'Messages':'对话数','Lines':'代码行','Files':'文件数','Days':'活跃天','Msgs/Day':'日均对话',
-  'What You Work On':'工作内容分布','How You Use Claude Code':'使用方式分析',
-  'Impressive Things You Did':'亮点成就','At a Glance':'数据一览',
-  'Claude Code Insights':'Claude Code 数据报告',
-  'Sessions':'会话数','Top':'主要','Activity':'活动',
+  'Messages':'rpt_messages','Lines':'rpt_lines','Files':'rpt_files','Days':'rpt_days','Msgs/Day':'rpt_msgs_day',
+  'What You Work On':'rpt_work_on','How You Use Claude Code':'rpt_usage',
+  'Impressive Things You Did':'rpt_highlights','At a Glance':'rpt_glance',
+  'Claude Code Insights':'rpt_insights','AI Code Insights':'rpt_insights',
+  'Sessions':'rpt_sessions','Top':'rpt_top','Activity':'rpt_activity',
 };
 const TRANS_CN2EN=Object.fromEntries(Object.entries(TRANS_EN2CN).map(([k,v])=>[v,k]));
 let _reportLangCN=false;
@@ -1315,12 +1357,15 @@ function toggleReportLang(){
     const nodes=[];
     while(walker.nextNode()) nodes.push(walker.currentNode);
     nodes.forEach(node=>{
-      let t=node.nodeValue;
-      Object.entries(map).forEach(([a,b])=>{t=t.replaceAll(a,b)});
-      node.nodeValue=t;
+      let v=node.nodeValue;
+      Object.entries(map).forEach(([a,bKey])=>{
+        const b=_reportLangCN?DICT.en[bKey]||a:DICT.zh[bKey]||a;
+        v=v.replaceAll(a,b);
+      });
+      node.nodeValue=v;
     });
     _reportLangCN=!_reportLangCN;
-    btn.textContent=_reportLangCN?'EN':'中文';
+    btn.textContent=_reportLangCN?'EN':t('lang_btn');
   }catch(e){console.warn('translate',e)}
 }
 
@@ -1359,12 +1404,12 @@ function loadSummary(){
   msgs.innerHTML='';
   const card=document.createElement('div');
   card.className='ai-summary-card';
-  const summaryText=S.cachedSummary||'正在生成摘要…';
-  card.innerHTML=`<div class="ai-summary-label">本周数据摘要</div><div id="summary-text">${escHtml(summaryText)}</div>`;
+  const summaryText=S.cachedSummary||t('generating_summary_short');
+  card.innerHTML=`<div class="ai-summary-label">${t('weekly_data_summary')}</div><div id="summary-text">${escHtml(summaryText)}</div>`;
   msgs.appendChild(card);
   const hint=document.createElement('div');
   hint.style.cssText='font-size:11px;color:var(--text3);text-align:center;padding:4px 0';
-  hint.textContent='可以继续提问 👇';
+  hint.textContent=t('can_continue_asking');
   msgs.appendChild(hint);
   msgs.scrollTop=msgs.scrollHeight;
 }
@@ -1382,7 +1427,7 @@ async function sendChat(){
   try{
     const r=await fetch('/api/ai/chat',{
       method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({question:q,context:{group:S.group,period:S.data.current_period,periodType:S.periodType,totals:S.data.totals,members:(S.data.members||[]).slice(0,20)}}),
+      body:JSON.stringify({question:q,lang:S.lang,context:{group:S.group,period:S.data.current_period,periodType:S.periodType,totals:S.data.totals,members:(S.data.members||[]).slice(0,20)}}),
     });
     const bubble=botDiv.querySelector('.msg-bubble');
     bubble.classList.remove('typing');
@@ -1405,7 +1450,7 @@ async function sendChat(){
     }
   }catch(e){
     const b=document.getElementById('bot-typing')?.querySelector('.msg-bubble');
-    if(b){b.classList.remove('typing');b.textContent='[出错了，请重试]'}
+    if(b){b.classList.remove('typing');b.textContent=t('error_retry')}
   }finally{
     document.getElementById('ai-send').disabled=false;
     inp.focus();

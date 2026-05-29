@@ -7,6 +7,7 @@ import os
 import re
 import sys
 from html import escape
+from i18n import T as _I18nT, _ZH_MAP
 from pathlib import Path
 
 
@@ -1143,8 +1144,25 @@ def merge(claude_path, codex_path, opencode_path, cursor_path, trae_path, opencl
     os.makedirs(os.path.dirname(out_path) or ".", exist_ok=True)
     with open(out_path, "w", encoding="utf-8") as f:
         f.write(html)
+
+    # Language post-processing
+    lang = os.environ.get("AGENTS_REPORT_LANG", "zh")
+    if lang == "en":
+        translated = translate_html(html, lang)
+        with open(out_path, "w", encoding="utf-8") as _tf:
+            _tf.write(translated)
+
     print(f"Combined report: {out_path}", file=sys.stderr)
 
+
+def translate_html(html, lang="zh"):
+    """Post-process HTML to match target language."""
+    if lang == "zh":
+        return html
+    _EN = {v: k for k, v in _ZH_MAP.items() if len(v) > 1}
+    for zh_phrase, en_phrase in sorted(_EN.items(), key=lambda x: -len(x[0])):
+        html = html.replace(zh_phrase, en_phrase)
+    return html
 
 if __name__ == "__main__":
     argc = len(sys.argv)

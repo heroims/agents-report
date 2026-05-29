@@ -16,8 +16,43 @@ _scripts_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'sc
 _sys_path = list(sys.path)
 if _scripts_dir not in sys.path:
     sys.path.insert(0, _scripts_dir)
-from analyze import generate_team_report, current_period, period_type_arg
+from analyze import generate_team_report, current_period, period_type_arg, set_lang
 sys.path = _sys_path
+
+# ── Bilingual server-side strings ──────────────────────
+_TEXTS = {
+    'zh': {
+        'ai_not_configured': 'AI 未配置',
+        'ai_timeout': 'AI 请求超时，请稍后重试',
+        'ai_invalid_key': 'API Key 无效，请检查 AI 配置',
+        'ai_bad_request': '请求参数错误：{}',
+        'ai_error': 'AI 服务异常：{}',
+        'stream_error': '[错误]',
+        'env_missing_key': 'AI_API_KEY 未配置',
+        'msg_unit': '条',
+        'line_unit': '行',
+        'not_submitted': '未提交',
+        'people_submitted': '人提交',
+        'chat_system': '你是团队效能分析助手。数据 — 周: {week}, 对话: {msgs}, 覆盖率: {pct}%, 成员: {members}',
+    },
+    'en': {
+        'ai_not_configured': 'AI not configured',
+        'ai_timeout': 'AI request timed out, please retry',
+        'ai_invalid_key': 'Invalid API Key, check AI configuration',
+        'ai_bad_request': 'Bad request: {}',
+        'ai_error': 'AI service error: {}',
+        'stream_error': '[Error]',
+        'env_missing_key': 'AI_API_KEY not configured',
+        'msg_unit': ' msgs',
+        'line_unit': ' lines',
+        'not_submitted': 'not submitted',
+        'people_submitted': ' submitted',
+        'chat_system': 'You are a team efficiency analysis assistant. Data — Week: {week}, Messages: {msgs}, Coverage: {pct}%, Members: {members}',
+    },
+}
+
+def _t(lang, key, *args):
+    return (_TEXTS.get(lang, _TEXTS['zh']).get(key, key)).format(*args)
 
 app = Flask(__name__)
 
@@ -133,6 +168,10 @@ def api_analyze():
     repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
     period_type = request.args.get('period_type', 'weekly')
     period = current_period(period_type_arg(period_type))
+    lang = request.args.get("lang", os.environ.get("AGENTS_REPORT_LANG", "zh"))
+    if lang:
+        set_lang(lang)
+
 
     reports_dir = os.environ.get('REPORTS_ROOT') or os.path.join(repo_root, 'reports')
     members_path = os.environ.get('MEMBERS_PATH') or os.path.join(repo_root, 'scripts', 'members.json')
@@ -174,18 +213,18 @@ def api_ai_summary():
         summary = _call_ai(prompt, model=None)
     except EnvironmentError as e:
         app.logger.error("AI summary failed: %s", e)
-        return jsonify({'summary': None, 'error': f'AI 未配置：{e}'})
+        return jsonify({'summary': None, 'error': _t(lang, 'ai_not_configured')})
     except Exception as e:
         app.logger.error("AI summary failed: %s", e)
         msg = str(e)
         if 'timed out' in msg or 'Timeout' in msg:
-            reason = 'AI 请求超时，请稍后重试'
+            reason = _t(lang, 'ai_timeout')
         elif 'invalid_api_key' in msg or '401' in msg:
-            reason = 'API Key 无效，请检查 AI 配置'
+            reason = _t(lang, 'ai_invalid_key')
         elif '400' in msg:
-            reason = f'请求参数错误：{msg[:120]}'
+            reason = _t(lang, 'ai_bad_request', msg[:120])
         else:
-            reason = f'AI 服务异常：{msg[:120]}'
+            reason = _t(lang, 'ai_error', msg[:120])
         return jsonify({'summary': None, 'error': reason})
 
     with _summary_cache_lock:
@@ -222,7 +261,7 @@ def api_ai_summary_stream():
                 yield f'data: {json.dumps(text, ensure_ascii=False)}\n\n'
         except Exception as e:
             app.logger.error("AI summary stream failed: %s", e)
-            yield f'data: {json.dumps("[错误]", ensure_ascii=False)}\n\n'
+            yield f'data: '+json.dumps(_t(lang, 'stream_error'), ensure_ascii=False)+'\n\n'
         else:
             full = ''.join(chunks)
             with _summary_cache_lock:
@@ -238,6 +277,7 @@ def api_ai_chat():
     body = request.get_json() or {}
     question = body.get('question', '')
     context = body.get('context', {})
+    chat_lang = body.get('lang', 'zh')
 
     def generate():
         try:
@@ -245,7 +285,7 @@ def api_ai_chat():
                 # chunk is JSON-encoded; frontend must JSON.parse(e.data) to decode
                 yield f'data: {json.dumps(chunk, ensure_ascii=False)}\n\n'
         except Exception as e:
-            yield f'data: {json.dumps("[错误]", ensure_ascii=False)}\n\n'
+            yield f'data: '+json.dumps(_t(lang, 'stream_error'), ensure_ascii=False)+'\n\n'
 
     return Response(
         generate(),
@@ -268,14 +308,14 @@ def _build_summary_prompt(data: dict, lang: str) -> str:
 
     def _fmt(m):
         if m['reported']:
-            return f"{m['display']}({m['messages']}条/{m['lines_added']}行)"
-        return f"{m['display']}(未提交)"
+            return f"{m['display']}({m['messages']}{_t(lang, 'msg_unit')}/{m['lines_added']}{_t(lang, 'line_unit')})"
+        return f"{m['display']}({_t(lang, 'not_submitted')})"
 
     group_lines = []
     for g, ms in sorted(groups.items()):
         reported = [m for m in ms if m['reported']]
         not_reported = [m for m in ms if not m['reported']]
-        block = f"[{g.upper()} {len(reported)}/{len(ms)}人提交] " + "; ".join(_fmt(m) for m in ms)
+        block = f"[{g.upper()} {len(reported)}/{len(ms)}"+_t(lang, 'people_submitted')+"] " + "; ".join(_fmt(m) for m in ms)
         group_lines.append(block)
 
     members_section = "\n".join(group_lines)
@@ -327,7 +367,7 @@ def _get_openai_client():
     global _openai_client
     if _openai_client is None:
         if not AI_API_KEY:
-            raise EnvironmentError("AI_API_KEY 未配置")
+            raise EnvironmentError("AI_API_KEY not configured")
         base = AI_BASE_URL or 'https://api.openai.com/v1'
         _openai_client = _openai.OpenAI(api_key=AI_API_KEY, base_url=base, timeout=60)
     return _openai_client
@@ -337,7 +377,7 @@ def _get_anthropic_client():
     global _anthropic_client
     if _anthropic_client is None:
         if not AI_API_KEY:
-            raise EnvironmentError("AI_API_KEY 未配置")
+            raise EnvironmentError("AI_API_KEY not configured")
         base = AI_BASE_URL or 'https://api.anthropic.com'
         _anthropic_client = _anthropic.Anthropic(api_key=AI_API_KEY, base_url=base, timeout=60)
     return _anthropic_client
@@ -373,15 +413,16 @@ def _call_ai_stream(question: str, context: dict, model: str = None, system_over
         totals = context.get('totals', {})
         members = context.get('members', [])[:20]
         members_text = '; '.join(
-            f"{m.get('display', '?')}: {m.get('messages', 0)}条"
+            f"{m.get('display', '?')}: {m.get('messages', 0)}{_t(chat_lang, 'msg_unit')}"
             if m.get('reported')
-            else f"{m.get('display', '?')}: 未提交"
+            else f"{m.get('display', '?')}: {_t(chat_lang, 'not_submitted')}"
             for m in members
         )
-        system = (
-            f"你是团队效能分析助手。数据 — 周: {context.get('week', '')}, "
-            f"对话: {totals.get('messages', 0)}, 覆盖率: {totals.get('coverage_pct', 0)}%, "
-            f"成员: {members_text}"
+        system = _t(chat_lang, 'chat_system',
+            week=context.get('week', ''),
+            msgs=totals.get('messages', 0),
+            pct=totals.get('coverage_pct', 0),
+            members=members_text
         )
 
     if provider == 'anthropic':
