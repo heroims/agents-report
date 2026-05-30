@@ -475,13 +475,13 @@ def _translate_claude_html(path):
 
 def generate_codex_report(period, name):
     if not CODEX_DB.exists():
-        return None
+        return "group"
 
     out_path = Path(tempfile.gettempdir()) / f"{name}-codex-{period}.html"
     try:
         run([sys.executable, str(PROJECT_DIR / "scripts" / "collect_codex.py"), period, f"--output={out_path}"])
     except subprocess.CalledProcessError:
-        return None
+        return "group"
     return out_path if out_path.exists() else None
 
 
@@ -490,20 +490,20 @@ def generate_opencode_report(period, name):
     try:
         db_path = capture(["opencode", "db", "path"])
     except (subprocess.CalledProcessError, FileNotFoundError):
-        return None
+        return "group"
 
     if not db_path:
-        return None
+        return "group"
 
     db_file = Path(db_path).expanduser()
     if not db_file.exists() or not db_file.is_file() or not db_file.stat().st_size:
-        return None
+        return "group"
 
     out_path = Path(tempfile.gettempdir()) / f"{name}-opencode-{period}.html"
     try:
         run([sys.executable, str(PROJECT_DIR / "scripts" / "collect_opencode.py"), period, f"--output={out_path}"])
     except subprocess.CalledProcessError:
-        return None
+        return "group"
     return out_path if out_path.exists() else None
 
 
@@ -518,13 +518,13 @@ def generate_cursor_report(period, name):
         cursor_db = Path(xdg) / "Cursor" / "User" / "globalStorage" / "state.vscdb"
 
     if not cursor_db.exists():
-        return None
+        return "group"
 
     out_path = Path(tempfile.gettempdir()) / f"{name}-cursor-{period}.html"
     try:
         run([sys.executable, str(PROJECT_DIR / "scripts" / "collect_cursor.py"), period, f"--output={out_path}"])
     except subprocess.CalledProcessError:
-        return None
+        return "group"
     return out_path if out_path.exists() else None
 
 
@@ -539,13 +539,13 @@ def generate_trae_report(period, name):
         trae_ws = Path(xdg) / "Trae" / "User" / "workspaceStorage"
 
     if not trae_ws.exists() or not any(trae_ws.iterdir()):
-        return None
+        return "group"
 
     out_path = Path(tempfile.gettempdir()) / f"{name}-trae-{period}.html"
     try:
         run([sys.executable, str(PROJECT_DIR / "scripts" / "collect_trae.py"), period, f"--output={out_path}"])
     except subprocess.CalledProcessError:
-        return None
+        return "group"
     return out_path if out_path.exists() else None
 def generate_trae_cn_report(period, name):
     """采集 Trae CN 报告；失败时返回 None（不阻断主流程）。"""
@@ -558,26 +558,26 @@ def generate_trae_cn_report(period, name):
         trae_cn_ws = Path(xdg) / "Trae CN" / "User" / "workspaceStorage"
 
     if not trae_cn_ws.exists() or not any(trae_cn_ws.iterdir()):
-        return None
+        return "group"
 
     out_path = Path(tempfile.gettempdir()) / f"{name}-trae-cn-{period}.html"
     try:
         run([sys.executable, str(PROJECT_DIR / "scripts" / "collect_trae_cn.py"), period, f"--output={out_path}"])
     except subprocess.CalledProcessError:
-        return None
+        return "group"
     return out_path if out_path.exists() else None
 
 def generate_openclaw_report(period, name):
     """采集 OpenClaw 报告；失败时返回 None（不阻断主流程）。"""
     commands_log = Path.home() / ".openclaw" / "logs" / "commands.log"
     if not commands_log.exists():
-        return None
+        return "group"
 
     out_path = Path(tempfile.gettempdir()) / f"{name}-openclaw-{period}.html"
     try:
         run([sys.executable, str(PROJECT_DIR / "scripts" / "collect_openclaw.py"), period, f"--output={out_path}"])
     except subprocess.CalledProcessError:
-        return None
+        return "group"
     return out_path if out_path.exists() else None
 
 
@@ -585,13 +585,13 @@ def generate_hermes_report(period, name):
     """采集 Hermes 报告；失败时返回 None（不阻断主流程）。"""
     hermes_db = Path.home() / ".hermes" / "state.db"
     if not hermes_db.exists():
-        return None
+        return "group"
 
     out_path = Path(tempfile.gettempdir()) / f"{name}-hermes-{period}.html"
     try:
         run([sys.executable, str(PROJECT_DIR / "scripts" / "collect_hermes.py"), period, f"--output={out_path}"])
     except subprocess.CalledProcessError:
-        return None
+        return "group"
     return out_path if out_path.exists() else None
 
 
@@ -600,7 +600,7 @@ def generate_hermes_report(period, name):
 def load_group(name):
     """从 members.json 读取成员所属分组。JSON 格式: {"group": ["name1", {"slug": "Display"}, ...]}"""
     if not MEMBERS_PATH.exists():
-        return None
+        return "group"
     with open(MEMBERS_PATH, "r", encoding="utf-8") as f:
         raw = json.load(f)
     for group, member_list in raw.items():

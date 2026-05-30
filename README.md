@@ -18,6 +18,18 @@
 - Python 3.12+（**核心采集仅需标准库，无需 pip/uv 安装任何包**）
 - 至少安装 Claude Code / Codex CLI / OpenCode / Cursor / Trae / OpenClaw / Hermes 其中之一
 
+## 快速上手
+
+`example/` 目录提供了开箱即用的模板文件：
+
+| 文件 | 用途 |
+|------|------|
+| [`example/members.json`](example/members.json) | 成员→分组映射示例（`dex` 组含 `ian`） |
+| [`example/.envrc`](example/.envrc) | 环境变量模板（Dashboard 地址、语言、GitLab、AI 摘要配置） |
+
+首次运行 `./dashboard-uv` 时，如果项目根目录缺少 `.envrc`，会自动从 `example/.envrc` 复制一份。
+`scripts/members.json` 需手动从 `example/members.json` 拷贝并根据团队结构调整。
+
 ## 可选：环境变量
 
 在项目根目录创建 `.envrc` 文件（已被 `.gitignore` 忽略），`./getagt`、`./analyzeagt`、`./dashboard-uv` 启动时会自动 `source`：
@@ -241,6 +253,9 @@ reports/
 ├── getagt                    # 个人采集入口（shell wrapper → scripts/getagt.py）
 ├── analyzeagt                # 团队分析入口（shell wrapper → scripts/analyze.py）
 ├── dashboard-uv              # Dashboard 入口（shell wrapper → dashboard/server.py）
+├── example/
+│   ├── .envrc               # 环境变量模板
+│   └── members.json         # 成员分组示例
 ├── pyproject.toml            # uv 项目定义 + Dashboard 依赖
 ├── Dockerfile                # Dashboard 容器构建
 ├── scripts/

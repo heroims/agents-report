@@ -3,6 +3,8 @@ set -eu
 
 cd "$(dirname "$0")"
 
+# 首次启动时自动从 example/ 复制 .envrc（如果本地不存在）
+[ -f .envrc ] || [ ! -f example/.envrc ] || cp example/.envrc .envrc
 # 加载本地环境变量（可选），仅对当前脚本生效
 [ -f .envrc ] && . ./.envrc
 
