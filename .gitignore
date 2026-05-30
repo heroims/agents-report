@@ -3,6 +3,10 @@ __pycache__/
 */__pycache__/
 *.py[cod]
 .DS_Store
+.envrc
+members.json
+exclude_paths.json
+
 
 # idea ignore
 .idea/
@@ -11,6 +15,6 @@ __pycache__/
 *.iws
 *.factorypath
 .venv/
-.superpowers/
+*.superpowers/
 .gstack/
 .claude/settings.local.json
